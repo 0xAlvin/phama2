@@ -1,0 +1,253 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: var(--space-md);
+  backdrop-filter: blur(2px);
+}
+
+.modal {
+  background-color: var(--background-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  width: 100%;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.closeButton {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+  background: var(--background-secondary);
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-color);
+  z-index: 10;
+  transition: background-color 0.2s;
+}
+
+.closeButton:hover {
+  background-color: var(--border-color);
+}
+
+.modalContent {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .modalContent {
+    flex-direction: row;
+    max-height: 80vh;
+  }
+}
+
+.imageContainer {
+  position: relative;
+  height: 300px;
+  background-color: var(--background-secondary);
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .imageContainer {
+    width: 40%;
+    height: auto;
+  }
+}
+
+.image {
+  object-fit: cover;
+}
+
+.badge {
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  background-color: var(--error-color);
+  color: var(--text-color-light);
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--font-size-xs);
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.details {
+  padding: var(--space-lg);
+  flex: 1;
+}
+
+.title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--space-sm);
+  color: var(--text-color);
+}
+
+.meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: var(--space-md);
+}
+
+.dosage {
+  font-size: var(--font-size-md);
+  color: var(--text-color-secondary);
+}
+
+.price {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--primary-color);
+}
+
+.pharmacy, .category {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-sm);
+  color: var(--text-color-secondary);
+}
+
+.stockInfo {
+  margin: var(--space-md) 0;
+  font-weight: var(--font-weight-medium);
+}
+
+.inStock {
+  color: var(--success-color);
+}
+
+.lowStock {
+  color: var(--warning-color);
+}
+
+.description, .pharmacyInfo {
+  margin-bottom: var(--space-lg);
+}
+
+.description h3, .pharmacyInfo h3 {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--space-xs);
+  color: var(--text-color);
+}
+
+.description p, .pharmacyInfo p {
+  color: var(--text-color-secondary);
+  line-height: 1.6;
+  margin-bottom: var(--space-xs);
+}
+
+.actions {
+  margin-top: var(--space-lg);
+}
+
+.addToCartButton {
+  background-color: var(--primary-color);
+  color: var(--text-color-light);
+  border: none;
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  width: 100%;
+  font-size: var(--font-size-md);
+  transition: background-color 0.2s;
+}
+
+.addToCartButton:hover {
+  background-color: var(--secondary-color);
+}
+
+@media (max-width: 767px) {
+  .closeButton {
+    top: var(--space-sm);
+    right: var(--space-sm);
+  }
+  
+  .details {
+    padding: var(--space-md);
+  }
+  
+  .title {
+    font-size: var(--font-size-lg);
+  }
+}
+
+.quantitySelector {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--space-md);
+}
+
+.quantityButton {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background-color: var(--background-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-lg);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quantityButton:hover:not(:disabled) {
+  background-color: var(--background-secondary);
+}
+
+.quantityButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.quantityValue {
+  margin: 0 var(--space-md);
+  font-size: var(--font-size-md);
+  min-width: 30px;
+  text-align: center;
+}
+
+.successMessage {
+  padding: var(--space-sm) var(--space-md);
+  background-color: var(--success-color-light);
+  color: var(--success-color);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-md);
+  font-weight: var(--font-weight-medium);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.successMessage::before {
+  content: '✓';
+  font-weight: var(--font-weight-bold);
+}
+
+.addToCartButton:disabled {
+  background-color: var(--border-color);
+  cursor: not-allowed;
+}

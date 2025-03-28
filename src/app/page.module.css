@@ -1,0 +1,23 @@
+/* Base styles for all devices */
+.container {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+}
+@media (min-width: 48rem) { /* 768px / 16px = 48rem */
+  .container {
+    max-width: 45rem; /* 720px / 16px = 45rem */
+  }
+}
+
+@media (min-width: 64rem) { /* 1024px / 16px = 64rem */
+  .container {
+    max-width: 82.5rem; /* 1320px / 16px = 82.5rem */
+  }
+}
+
+@media (min-width: 90rem) { /* 1440px / 16px = 90rem */
+  .container {
+    max-width: 82.5rem; /* 1320px / 16px = 82.5rem */
+  }
+}

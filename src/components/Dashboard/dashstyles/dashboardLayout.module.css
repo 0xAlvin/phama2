@@ -1,0 +1,842 @@
+.dashboardContainer {
+    display: flex;
+    min-height: 100vh;
+    height: 100vh; /* Fix the height to viewport */
+    background-color: var(--background);
+    color: var(--foreground);
+    overflow: hidden; /* Prevent scrolling on the container */
+}
+
+.sidebar {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    width: 250px;
+    padding: var(--space-md);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease-in-out;
+    z-index: 20;
+    height: 100vh; /* Full viewport height */
+    position: sticky;
+    top: 0;
+    overflow-y: auto; /* Allow scrolling inside sidebar if content is too tall */
+    overflow-x: hidden; /* Prevent horizontal scrolling */
+    padding-right: calc(var(--space-md) - 2px);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+}
+
+.sidebar.open {
+    transform: translateX(0);
+}
+
+.sidebarHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: var(--space-md);
+    margin-bottom: var(--space-md);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.logo {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.closeButton {
+    background: none;
+    border: none;
+    color: var(--text-color-secondary);
+    cursor: pointer;
+    padding: var(--space-xs);
+}
+
+.closeIcon {
+    width: 1.2rem;
+    height: 1.2rem;
+}
+
+/* User Session Styles */
+.userSession {
+    display: flex;
+    align-items: center;
+    padding: var(--space-md);
+    margin-bottom: var(--space-md);
+    background-color: var(--background-secondary);
+    border-radius: var(--radius-md);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.userSession:hover {
+    box-shadow: 0 3px 6px rgba(0,0,0,0.16);
+    transform: translateY(-2px);
+}
+
+.userAvatar {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin-right: var(--space-sm);
+    display: flex; /* Add this to ensure proper alignment */
+    align-items: center; /* Add this to center the placeholder content */
+    justify-content: center; /* Add this to center the placeholder content */
+    background-color: var(--background-secondary); /* Light background for empty state */
+    position: relative; /* For potential status indicators */
+}
+
+.avatarPlaceholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color, #1e7d8e));
+    color: white;
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-md);
+    text-transform: uppercase;
+    border-radius: 50%;
+    overflow: hidden;
+    user-select: none;
+}
+
+.userInfo {
+    overflow: hidden;
+}
+
+.userName {
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-color);
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.userEmail {
+    font-size: var(--font-size-sm);
+    color: var(--text-color-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Navigation Styles */
+.nav {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto; /* Make the navigation section scrollable if needed */
+}
+
+.navDivider {
+    margin: var(--space-sm) 0;
+    position: relative;
+}
+
+.dividerTitle {
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    color: var(--text-color-tertiary);
+    padding: var(--space-xs) 0;
+    letter-spacing: 0.05em;
+    font-weight: var(--font-weight-semibold);
+}
+
+.nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 var(--space-md) 0;
+}
+
+.nav li {
+    margin-bottom: var(--space-xs);
+}
+
+.navLink {
+    display: flex;
+    align-items: center;
+    color: var(--text-color-secondary);
+    text-decoration: none;
+    padding: var(--space-sm);
+    border-radius: var(--radius-sm);
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+.navLink:hover,
+.navLink.active {
+    background-color: var(--background-secondary);
+    color: var(--primary-color);
+}
+
+.navIcon {
+    width: 1.2rem;
+    height: 1.2rem;
+    margin-right: var(--space-xs);
+}
+
+.sidebarFooter {
+    margin-top: auto;
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--border-color);
+}
+
+/* Main Content Styles */
+.mainContent {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* Full viewport height */
+    max-width: calc(100% - 250px); /* Prevent overflow with sidebar */
+    position: relative;
+}
+
+/* Improved Header Layout */
+.header {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    padding: var(--space-sm) var(--space-md);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 64px;
+    position: sticky;
+    top: 0;
+    width: 100%;
+    z-index: 10;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.menuButton {
+    background: none;
+    border: none;
+    color: var(--text-color-secondary);
+    cursor: pointer;
+    padding: var(--space-xs);
+    margin-right: var(--space-sm);
+    display: none;
+    /* Hidden by default on larger screens */
+    border-radius: 50%;
+    transition: background-color 0.15s ease, transform 0.2s ease;
+}
+
+.menuButton:hover {
+    background-color: var(--background-secondary);
+    transform: translateY(-1px);
+}
+
+.menuButton:active {
+    transform: translateY(0px);
+}
+
+.menuIcon {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+/* Material Design headerActions styling */
+.headerActions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    margin-left: auto;
+    justify-content: flex-end;
+}
+
+/* Enhanced Search Bar Styles */
+.searchForm {
+    position: relative;
+    width: 300px;
+    transition: width 0.3s ease;
+    margin-right: auto; /* Push other elements to the right */
+}
+
+.searchInput {
+    width: 100%;
+    padding: var(--space-xs) var(--space-md);
+    padding-right: 2.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+    background-color: var(--background);
+    color: var(--text-color);
+    font-size: var(--font-size-sm);
+    transition: all 0.2s ease-in-out;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    background-color: var(--background-secondary);
+    border: none;
+}
+
+.searchInput:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(44, 139, 128, 0.1);
+    background-color: var(--background-color);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    border: none;
+}
+
+.searchButton {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: transparent;
+    border: none;
+    color: var(--text-color-secondary);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+    transition: background-color 0.15s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.searchButton:hover {
+    background-color: var(--background-secondary);
+    color: var(--primary-color);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+}
+
+.searchButton:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.searchIcon {
+    width: 1.2rem;
+    height: 1.2rem;
+}
+
+/* Improved Notification Styles */
+.notificationsContainer {
+    position: relative;
+}
+
+.notificationButton {
+    background: none;
+    border: none;
+    color: var(--text-color-secondary);
+    cursor: pointer;
+    padding: var(--space-xs);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    transition: all 0.2s ease;
+    transition: background-color 0.15s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.notificationButton:hover {
+    background-color: var(--background-secondary);
+    color: var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+}
+
+.notificationButton:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.notificationIcon {
+    width: 1.3rem;
+    height: 1.3rem;
+}
+
+.notificationBadge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background-color: var(--error-color);
+    color: white;
+    font-size: 0.65rem;
+    font-weight: var(--font-weight-bold);
+    min-width: 16px;
+    height: 16px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    border: 2px solid var(--background-color);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.notificationDropdown {
+    position: absolute;
+    top: calc(100% + 5px);
+    right: 0;
+    width: 320px;
+    background-color: var(--background-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    z-index: 30;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 8px;
+    border: none;
+}
+
+.notificationHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-sm) var(--space-md);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.notificationHeader h3 {
+    margin: 0;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+}
+
+.markAllReadButton {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+}
+
+.notificationList {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.notificationItem {
+    padding: var(--space-sm) var(--space-md);
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.2s;
+    cursor: pointer;
+}
+
+.notificationItem:hover {
+    background-color: var(--background-secondary);
+}
+
+.notificationItem.unread {
+    background-color: rgba(44, 139, 128, 0.05);
+    border-left: 3px solid var(--primary-color);
+}
+
+.notificationContent h4 {
+    margin: 0 0 4px 0;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+}
+
+.notificationContent p {
+    margin: 0 0 4px 0;
+    font-size: var(--font-size-sm);
+    color: var(--text-color-secondary);
+}
+
+.notificationTime {
+    font-size: var(--font-size-xs);
+    color: var(--text-color-tertiary);
+}
+
+.noNotifications {
+    padding: var(--space-md);
+    text-align: center;
+    color: var(--text-color-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.notificationFooter {
+    padding: var(--space-sm) var(--space-md);
+    text-align: center;
+    border-top: 1px solid var(--border-color);
+}
+
+.viewAllLink {
+    color: var(--primary-color);
+    font-size: var(--font-size-sm);
+    text-decoration: none;
+}
+
+/* Enhanced Profile Button */
+.profileContainer {
+    position: relative;
+}
+
+.profileButton {
+    display: flex;
+    align-items: center;
+    background: none;
+    border: 1px solid transparent;
+    color: var(--text-color);
+    cursor: pointer;
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+    transition: background-color 0.15s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.profileButton:hover {
+    background-color: var(--background-secondary);
+    border-color: var(--border-color);
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+}
+
+.profileButton:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.profileAvatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin-right: var(--space-xs);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 2px solid var(--background-color);
+    transition: transform 0.2s ease;
+    background-color: var(--background-secondary);
+}
+
+.profileButton:hover .profileAvatar {
+    transform: scale(1.05);
+}
+
+.profileName {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    margin-right: var(--space-xs);
+    display: none;
+}
+
+.dropdownIcon {
+    width: 16px;
+    height: 16px;
+    color: var(--text-color-secondary);
+    transition: transform 0.2s ease;
+}
+
+.profileButton:hover .dropdownIcon {
+    transform: translateY(2px);
+}
+
+.profileDropdown {
+    position: absolute;
+    top: calc(100% + 5px);
+    right: 0;
+    width: 240px;
+    background-color: var(--background-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    z-index: 30;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 8px;
+    border: none;
+}
+
+.profileHeader {
+    padding: var(--space-sm) var(--space-md);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.profileInfo {
+    display: flex;
+    flex-direction: column;
+}
+
+.profileRole {
+    font-size: var(--font-size-xs);
+    color: var(--text-color-tertiary);
+    margin-top: 2px;
+}
+
+.profileMenu {
+    padding: var(--space-xs) 0;
+}
+
+.profileMenuItem {
+    display: flex;
+    align-items: center;
+    padding: var(--space-sm) var(--space-md);
+    color: var(--text-color);
+    text-decoration: none;
+    transition: background-color 0.2s;
+    font-size: var(--font-size-sm);
+}
+
+.profileMenuItem:hover {
+    background-color: var(--background-secondary);
+}
+
+.menuItemIcon {
+    width: 16px;
+    height: 16px;
+    margin-right: var(--space-sm);
+    color: var(--text-color-secondary);
+}
+
+.divider {
+    height: 1px;
+    background-color: var(--border-color);
+    margin: var(--space-xs) 0;
+}
+
+.logoutItem {
+    color: var(--error-color);
+}
+
+.logoutItem .menuItemIcon {
+    color: var(--error-color);
+}
+
+.main {
+    padding: var(--space-md);
+    flex-grow: 1;
+    overflow-y: auto; /* This is the main scrollable area */
+    height: calc(100vh - 64px); /* Subtract header height */
+}
+
+/* Custom Scrollbar Styles */
+.sidebar::-webkit-scrollbar,
+.nav::-webkit-scrollbar,
+.main::-webkit-scrollbar,
+.notificationList::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track,
+.nav::-webkit-scrollbar-track,
+.main::-webkit-scrollbar-track,
+.notificationList::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb,
+.nav::-webkit-scrollbar-thumb,
+.main::-webkit-scrollbar-thumb,
+.notificationList::-webkit-scrollbar-thumb {
+    background-color: var(--border-color);
+    border-radius: var(--radius-full);
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover,
+.nav::-webkit-scrollbar-thumb:hover,
+.main::-webkit-scrollbar-thumb:hover,
+.notificationList::-webkit-scrollbar-thumb:hover {
+    background-color: var(--text-color-tertiary);
+}
+
+/* Firefox scrollbar styles */
+.sidebar,
+.nav,
+.main,
+.notificationList {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) transparent;
+}
+
+/* Override hover behavior for scrollbar in dark mode */
+@media (prefers-color-scheme: dark) {
+    .sidebar::-webkit-scrollbar-thumb:hover,
+    .nav::-webkit-scrollbar-thumb:hover,
+    .main::-webkit-scrollbar-thumb:hover,
+    .notificationList::-webkit-scrollbar-thumb:hover {
+        background-color: var(--text-color-secondary);
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 80%;
+        max-width: 280px;
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        z-index: 100; /* Higher z-index for mobile */
+    }
+
+    .sidebar.open {
+        transform: translateX(0);
+    }
+
+    .menuButton {
+        display: block;
+    }
+
+    .searchForm {
+        width: 180px;
+    }
+
+    .searchInput {
+        padding: calc(var(--space-xs) * 0.8) var(--space-sm);
+    }
+    
+    .notificationButton, 
+    .profileButton {
+        padding: calc(var(--space-xs) * 0.8);
+    }
+
+    .profileName {
+        display: none;
+    }
+
+    .mainContent {
+        max-width: 100%; /* Use full width when sidebar is hidden */
+    }
+
+    .headerActions {
+        gap: var(--space-sm);
+    }
+
+    .userAvatar {
+        width: 36px;
+        height: 36px;
+        min-width: 36px; /* Ensure avatar doesn't shrink too much */
+    }
+    
+    .profileAvatar {
+        width: 28px;
+        height: 28px;
+        min-width: 28px;
+    }
+    
+    .avatarPlaceholder.sidebar {
+        font-size: var(--font-size-sm);
+    }
+    
+    .avatarPlaceholder.header {
+        font-size: var(--font-size-xs);
+    }
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+    .profileName {
+        display: none;
+    }
+    
+    .searchForm {
+        width: 220px;
+    }
+}
+
+@media (min-width: 1024px) {
+    .profileName {
+        display: block;
+    }
+}
+
+@media (max-width: 480px) {
+    .searchForm {
+        display: none;
+    }
+    
+    .header {
+        padding-left: var(--space-sm);
+        padding-right: var(--space-sm);
+    }
+    
+    .headerActions {
+        gap: var(--space-xs);
+    }
+    
+    .notificationButton, 
+    .profileButton {
+        width: 36px;
+        height: 36px;
+    }
+
+    .userAvatar {
+        width: 32px;
+        height: 32px;
+        min-width: 32px;
+        margin-right: var(--space-xs);
+    }
+    
+    .profileAvatar {
+        width: 24px;
+        height: 24px;
+        min-width: 24px;
+    }
+}
+
+/* Create an overlay when mobile sidebar is open */
+.sidebarOverlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 90;
+}
+
+.sidebar.open + .sidebarOverlay {
+    display: block;
+}
+
+/* Add a smaller variant of avatar placeholder for dropdown menu */
+.avatarPlaceholder.small {
+    font-size: var(--font-size-sm);
+}
+
+/* Add a pulsing animation for loading state */
+.avatarLoading {
+    animation: pulse 1.5s infinite ease-in-out;
+    background: linear-gradient(135deg, var(--background-secondary), var(--border-color));
+}
+
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+.authButtonReset {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    padding: 0;
+    width: 100%;
+    text-align: left;
+    display: flex;
+    align-items: center;
+}
+
+.logoutButton {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    margin-left: 10px;
+    padding: 0;
+    width: 100%;
+    text-align: left;
+}

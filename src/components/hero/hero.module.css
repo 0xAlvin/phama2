@@ -1,0 +1,98 @@
+.hero {
+    position: relative;
+    display: flex;
+    flex-direction: column; /* Adjust for smaller screens */
+    align-items: center;
+    min-height: 600px; /* Adjust as needed */
+    overflow: hidden;
+    padding: var(--space-2xl) var(--space-xl);
+}
+
+.heroImage {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.heroContent {
+    position: relative;
+    z-index: 2;
+    color: var(--text-color-2); /* Adjust text color for better contrast */
+    max-width: 50%; /* Adjust width as needed */
+    padding: var(--space-xl);
+    text-align: center; /* Center text for smaller screens */
+}
+
+.heroTitle {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--line-height-tight);
+    margin-bottom: var(--space-md);
+}
+
+.primaryText {
+    color: var(--primary-color);
+}
+
+.heroDescription {
+    font-size: var(--font-size-lg);
+    color: var(--text-color);
+    margin-bottom: var(--space-xl);
+}
+
+.primaryButton {
+    background-color: var(--primary-color);
+    color: var(--text-color-light);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-full);
+    font-weight: var(--font-weight-bold);
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.reviewWidget {
+    position: absolute;
+    bottom: var(--space-lg);
+    right: var(--space-lg);
+    background: var(--background-color-light);
+    padding: var(--space-md);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    z-index: 3;
+}
+
+.responsiveReviewWidget {
+    width: 90%; /* Adjust width for smaller screens */
+    bottom: var(--space-md);
+    right: 50%;
+    transform: translateX(50%);
+}
+
+@media (max-width: 768px) {
+    .heroContent {
+        max-width: 90%; /* Expand content width for smaller screens */
+        padding: var(--space-md);
+    }
+
+    .heroTitle {
+        font-size: var(--font-size-xl); /* Reduce font size */
+    }
+
+    .heroDescription {
+        font-size: var(--font-size-md); /* Adjust font size */
+    }
+
+    .primaryButton {
+        padding: var(--space-xs) var(--space-sm); /* Adjust button padding */
+    }
+
+    .reviewWidget {
+        position: static; /* Stack review widget below content */
+        margin-top: var(--space-lg);
+        transform: none;
+    }
+}

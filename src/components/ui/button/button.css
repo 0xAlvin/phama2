@@ -1,0 +1,66 @@
+button {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    background-color: var(--geist-cyan);
+    color: var(--geist-white);
+    transition: background-color 0.2s;
+}
+
+button:hover {
+    background-color: var(--geist-cyan-dark);
+}
+
+button:disabled {
+    background-color: var(--geist-cyan-light);
+    cursor: not-allowed;
+}
+button:disabled:hover {
+    background-color: var(--geist-cyan-light);
+}
+button:active {
+    background-color: var(--geist-cyan-darker);
+}
+button:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--geist-cyan-light);
+}
+button:active:focus {
+    box-shadow: 0 0 0 3px var(--geist-cyan-darker);
+}
+button:disabled:focus {
+    box-shadow: none;
+}
+button:disabled:active {
+    background-color: var(--geist-cyan-light);
+}
+button:disabled:active:focus {
+    box-shadow: none;
+}
+button:disabled:active:focus {
+    box-shadow: none;
+}
+button:disabled:active:focus {
+    box-shadow: none;
+}
+button:disabled:active:focus {
+    box-shadow: none;
+}
+button:disabled:active:focus {
+    box-shadow: none;
+}
+button:disabled:active:focus {
+    box-shadow: none;
+}
+button:disabled:active:focus {
+    box-shadow: none;
+}
+button:disabled:active:focus {
+    box-shadow: none;
+}
+button:disabled:active:focus {
+    box-shadow: none;
+}

@@ -1,0 +1,269 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-md);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: var(--space-lg);
+  margin-top: var(--space-xl);
+}
+
+.header h1 {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  margin: 0;
+  color: var(--text-color);
+}
+
+.itemCount {
+  font-size: var(--font-size-md);
+  color: var(--text-color-secondary);
+  margin-left: var(--space-sm);
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 50vh;
+  color: var(--text-color-secondary);
+  gap: var(--space-md);
+}
+
+.loadingSpinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.emptyCart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 50vh;
+  text-align: center;
+  padding: var(--space-xl) var(--space-md);
+}
+
+.emptyCartIcon {
+  color: var(--text-color-secondary);
+  margin-bottom: var(--space-md);
+}
+
+.emptyCart h2 {
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--space-sm);
+  color: var(--text-color);
+}
+
+.emptyCart p {
+  color: var(--text-color-secondary);
+  margin-bottom: var(--space-lg);
+  max-width: 400px;
+}
+
+.shopButton {
+  display: inline-block;
+  background-color: var(--primary-color);
+  color: var(--text-color-light);
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+  transition: background-color 0.2s;
+}
+
+.shopButton:hover {
+  background-color: var(--secondary-color);
+}
+
+.cartContent {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: var(--space-lg);
+  height: calc(100vh - 200px); /* Set fixed height based on viewport */
+  overflow: hidden; /* Prevent overflow on the container */
+}
+
+.cartItems {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  overflow-y: auto; /* Change from scroll to auto */
+  max-height: 100%; /* Take full height of parent */
+  padding-right: var(--space-sm); /* Add padding for scrollbar */
+}
+/* Custom Scrollbar Styles */
+.cartItems::-webkit-scrollbar {
+    width: 0.4em;
+}
+
+.cartItems::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.cartItems::-webkit-scrollbar-thumb {
+    background-color: var(--border-color);
+    border-radius: var(--radius-md);
+}
+
+
+.notificationList::-webkit-scrollbar-thumb:hover {
+    background-color: var(--text-color-tertiary);
+}
+
+.pharmacyGroup {
+  background-color: var(--background-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  min-height: max-content;
+}
+
+.pharmacyHeader {
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--background-secondary);
+}
+
+.pharmacyHeader h2 {
+  font-size: var(--font-size-md);
+  margin: 0 0 var(--space-xs);
+  color: var(--text-color);
+}
+
+.pharmacyInfo {
+  display: flex;
+  flex-direction: column;
+  font-size: var(--font-size-sm);
+  color: var(--text-color-secondary);
+}
+
+.orderSummary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  max-height: 100%; /* Match height to parent */
+  overflow-y: auto; /* Allow scrolling if needed */
+}
+
+.orderSummaryCard, .promoCard {
+  background-color: var(--background-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-md);
+}
+
+.orderSummaryCard h2, .promoCard h3 {
+  font-size: var(--font-size-md);
+  margin: 0 0 var(--space-md);
+  color: var(--text-color);
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-sm);
+  font-size: var(--font-size-md);
+  color: var(--text-color);
+}
+
+.summaryDivider {
+  height: 1px;
+  background-color: var(--border-color);
+  margin: var(--space-md) 0;
+}
+
+.summaryTotal {
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--space-md);
+}
+
+.checkoutButton {
+  background-color: var(--primary-color);
+  color: var(--text-color-light);
+  border: none;
+  width: 100%;
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-bottom: var(--space-md);
+}
+
+.checkoutButton:hover {
+  background-color: var(--secondary-color);
+}
+
+.continueShoppingLink {
+  display: block;
+  text-align: center;
+  color: var(--primary-color);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+}
+
+.continueShoppingLink:hover {
+  text-decoration: underline;
+}
+
+.promoForm {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.promoForm input {
+  flex: 1;
+  padding: var(--space-sm);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+}
+
+.promoForm button {
+  background-color: var(--primary-color);
+  color: var(--text-color-light);
+  border: none;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.promoForm button:hover {
+  background-color: var(--secondary-color);
+}
+
+@media (max-width: 768px) {
+  .cartContent {
+    grid-template-columns: 1fr;
+    height: auto; /* Remove fixed height on mobile */
+  }
+
+  .cartItems, .orderSummary {
+    max-height: none; /* Remove max height constraint */
+  }
+
+  .header {
+    margin-top: var(--space-md);
+  }
+}

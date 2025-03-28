@@ -1,0 +1,143 @@
+.header {
+  background-color: var(--background-color);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-radius: var(--radius-lg);
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-lg);
+}
+
+.logo a {
+  color: var(--text-color);
+  text-decoration: none;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.navLink {
+  color: var(--text-color);
+  text-decoration: none;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-md);
+  transition: background-color 0.2s;
+}
+
+.navLink:hover {
+  background-color: var(--background-secondary);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.userMenu {
+  position: relative;
+}
+
+.profileButton {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  color: var(--text-color-light);
+  border: none;
+  font-weight: var(--font-weight-bold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.profileButton:hover {
+  background-color: var(--secondary-color);
+}
+
+.userMenu:hover .dropdown {
+  display: block;
+}
+
+.dropdown {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  background-color: var(--background-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  width: 220px;
+  padding: var(--space-sm) 0;
+  z-index: 10;
+}
+
+.userName {
+  font-weight: var(--font-weight-semibold);
+  padding: var(--space-xs) var(--space-md);
+}
+
+.userEmail {
+  font-size: var(--font-size-sm);
+  color: var(--text-color-secondary);
+  padding: 0 var(--space-md) var(--space-sm);
+}
+
+.divider {
+  height: 1px;
+  background-color: var(--border-color);
+  margin: var(--space-xs) 0;
+}
+
+.dropdownItem {
+  display: block;
+  padding: var(--space-sm) var(--space-md);
+  color: var(--text-color);
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+
+.dropdownItem:hover {
+  background-color: var(--background-secondary);
+}
+
+.signOutButton {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: var(--space-sm) var(--space-md);
+  color: var(--error-color);
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  transition: background-color 0.2s;
+}
+
+.signOutButton:hover {
+  background-color: var(--background-secondary);
+}
+
+@media (max-width: 768px) {
+  .nav {
+    display: none;
+  }
+}

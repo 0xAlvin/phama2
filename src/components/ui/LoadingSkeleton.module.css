@@ -1,0 +1,81 @@
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
+
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  background-color: white;
+  height: 100%;
+}
+
+.image {
+  height: 180px;
+  background-color: #e0e0e0;
+  animation: pulse 1.5s infinite;
+}
+
+.content {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.title {
+  height: 1.25rem;
+  margin-bottom: 0.5rem;
+  background-color: #e0e0e0;
+  border-radius: 4px;
+  animation: pulse 1.5s infinite;
+}
+
+.details {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.dosage {
+  height: 0.875rem;
+  width: 40%;
+  background-color: #e0e0e0;
+  border-radius: 4px;
+  animation: pulse 1.5s infinite;
+}
+
+.price {
+  height: 0.875rem;
+  width: 20%;
+  background-color: #e0e0e0;
+  border-radius: 4px;
+  animation: pulse 1.5s infinite;
+}
+
+.pharmacy {
+  height: 0.875rem;
+  width: 60%;
+  margin-bottom: 1rem;
+  background-color: #e0e0e0;
+  border-radius: 4px;
+  animation: pulse 1.5s infinite;
+}
+
+.button {
+  margin-top: auto;
+  height: 2.25rem;
+  background-color: #e0e0e0;
+  border-radius: 6px;
+  animation: pulse 1.5s infinite;
+}

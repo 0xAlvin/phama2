@@ -1,0 +1,359 @@
+/* app/not-found.css */
+.not-found-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 1.25rem;
+    background-color: var(--background);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.not-found-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 50rem;
+    background-color: var(--background-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    padding: 2rem;
+    position: relative;
+    border: 0.0625rem solid var(--border-color);
+}
+
+/* Pill Bottle Animation */
+.pill-bottle {
+    position: relative;
+    width: 7.5rem;
+    height: 12.5rem;
+    margin-bottom: 1.875rem;
+}
+
+.bottle-top {
+    width: 6.25em;
+    height: 1.875rem;
+    position: absolute;
+    top: -0.625rem;
+    left: 0.625rem;
+    z-index: 10;
+}
+
+.bottle-cap {
+    background-color: var(--primary-color);
+    width: 100%;
+    height: 70%;
+    border-radius: 0.5em 0.5em 0 0;
+}
+
+.bottle-neck {
+    background-color: var(--secondary-color);
+    width: 6em;
+    height: 0.8em;
+    justify-self: center;
+    transform: translateY(-1em);
+}
+
+.bottle-body {
+    width: 7.5rem;
+    height: 9rem;
+    background-color: var(--background-color);
+    border: 0.25rem solid var(--primary-color);
+    border-radius: 0.625rem;
+    position: absolute;
+    top: 1.25rem;
+    animation: pourPill 1.6s ease-out forwards;
+    z-index: 6;
+}
+
+.bottle-label {
+    width: 5.625rem;
+    height: 5rem;
+    background-color: var(--foreground-color);
+    border: 0.125rem solid var(--secondary-color);
+    border-radius: 0.3125rem;
+    position: absolute;
+    top: 2.5rem;
+    left: 0.8125rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0.3125rem;
+}
+
+@keyframes pourPill {
+    0% {
+        transform: rotate(0) translateY(0);
+    }
+    
+    15% {
+        transform: rotate(-30deg) translateY(0);
+    }
+    
+    30% {
+        transform: rotate(-120deg) translateY(0);
+    }
+    
+    45% {
+        transform: rotate(-150deg) translateY(0);
+    }
+    
+    60% {
+        transform: rotate(-160deg) translateY(0.625rem);
+    }
+    
+    75% {
+        transform: rotate(-150deg) translateY(0.3125rem);
+    }
+    
+    85% {
+        transform: rotate(-60deg) translateY(0);
+    }
+    
+    95% {
+        transform: rotate(-10deg) translateY(0);
+    }
+    
+    100% {
+        transform: rotate(0) translateY(0);
+    }
+}
+
+.label-line {
+    height: 0.25rem;
+    background-color: var(--primary-color);
+    margin: 0.25rem 0;
+    border-radius: 0.125rem;
+}
+
+.pills-container {
+    position: absolute;
+    bottom: 1.25rem;
+    left: 0;
+    width: 7.5rem;
+    height: 3.75rem;
+    z-index: 5;
+}
+
+.pill {
+    position: absolute;
+    width: 3rem;
+    height: 1.5rem;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-xs);
+    box-shadow: var(--shadow-sm);
+    animation: spillPill 0.8s ease-out forwards;
+    opacity: 0;
+}
+
+.pill-1 {
+    background-color: var(--pill-color-1, var(--secondary-color));
+    color: var(--accent-color);
+    animation-delay: 0.2s;
+    transform-origin: bottom center;
+}
+
+.pill-2 {
+    background-color: var(--pill-color-2, var(--primary-color));
+    color: var(--background-color);
+    animation-delay: 0.4s;
+    transform-origin: bottom center;
+}
+
+.pill-3 {
+    background-color: var(--light-accent);
+    color: var(--accent-color);
+    animation-delay: 0.6s;
+    transform-origin: bottom center;
+}
+
+.pill-4 {
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+    animation-delay: 0.8s;
+    transform-origin: bottom center;
+}
+
+@keyframes spillPill {
+    0% {
+        opacity: 0;
+        transform: translateY(0) rotate(0deg);
+    }
+
+    20% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(5rem) translateX(var(--translate-x, 0)) rotate(var(--rotate, 0deg));
+    }
+}
+
+.pill-1 {
+    --translate-x: -3.125rem;
+    --rotate: -30deg;
+}
+
+.pill-2 {
+    --translate-x: -1.25rem;
+    --rotate: 25deg;
+}
+
+.pill-3 {
+    --translate-x: 1.25rem;
+    --rotate: -15deg;
+}
+
+.pill-4 {
+    --translate-x: 3.125rem;
+    --rotate: 40deg;
+}
+
+/* Content Styles */
+.not-found-content {
+    text-align: center;
+    margin-top: 1.25rem;
+    max-width: 37.5rem;
+}
+
+.not-found-content h1 {
+    color: var(--text-color);
+    font-size: var(--font-size-2xl);
+    margin: 0;
+    margin-bottom: var(--space-sm);
+}
+
+.not-found-content p {
+    color: var(--text-color);
+    margin: 0 0 var(--space-md) 0;
+    font-size: var(--font-size-md);
+    line-height: var(--line-height-normal);
+}
+
+.not-found-subtitle {
+    color: var(--secondary-color) !important;
+    font-size: var(--font-size-base) !important;
+    margin-bottom: var(--space-xl) !important;
+}
+
+.suggestions {
+    margin: var(--space-xl) 0;
+    text-align: left;
+    background-color: var(--background-color);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    border-left: 0.25rem solid var(--secondary-color);
+}
+
+.suggestions h2 {
+    color: var(--primary-color);
+    font-size: var(--font-size-md);
+    margin: 0 0 var(--space-sm) 0;
+}
+
+.suggestions ul {
+    margin: 0;
+    padding-left: var(--space-md);
+}
+
+.suggestions li {
+    margin-bottom: var(--space-sm);
+    color: var(--text-color);
+}
+
+.not-found-actions {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-md);
+    margin-top: var(--space-xl);
+}
+
+.primary-button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--radius-full);
+    padding: var(--space-sm) var(--space-xl);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-md);
+    text-decoration: none;
+}
+
+.primary-button:hover {
+    background-color: #237067;
+    transform: translateY(-0.125rem);
+    box-shadow: 0 0.375rem 0.5rem rgba(44, 139, 128, 0.25);
+}
+
+.secondary-button {
+    background-color: var(--background-color);
+    color: var(--primary-color);
+    border: 0.125rem solid var(--primary-color);
+    border-radius: var(--radius-full);
+    padding: var(--space-sm) var(--space-lg);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.secondary-button:hover {
+    background-color: rgba(44, 139, 128, 0.1);
+    transform: translateY(-0.125rem);
+}
+
+/* Responsive Design */
+@media (max-width: 48rem) {
+    .not-found-card {
+        padding: var(--space-lg) var(--space-md);
+    }
+
+    .not-found-content h1 {
+        font-size: var(--font-size-xl);
+    }
+
+    .not-found-content p {
+        font-size: var(--font-size-base);
+    }
+
+    .suggestions {
+        padding: var(--space-md);
+    }
+
+    .not-found-actions {
+        flex-direction: column;
+        gap: var(--space-sm);
+    }
+
+    .primary-button,
+    .secondary-button {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+/* Dark mode adaptations */
+@media (prefers-color-scheme: dark) {
+    .pill-4 {
+        color: var(--background);
+    }
+    
+    .bottle-body {
+        background-color: var(--background-color);
+    }
+    
+    .bottle-label {
+        background-color: var(--border-color);
+    }
+}

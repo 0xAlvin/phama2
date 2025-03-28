@@ -1,0 +1,880 @@
+/* Authentication Pages Styling */
+
+/* Base styling */
+.auth_page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-md);
+    background-color: var(--background);
+    /* Add subtle background animation for pharma theme */
+    background: linear-gradient(120deg, var(--background), rgba(44, 139, 128, 0.05));
+    background-size: 400% 400%;
+    animation: gradientBackground 15s ease infinite;
+}
+
+@keyframes gradientBackground {
+    0% {
+        background-position: 0% 50%
+    }
+
+    50% {
+        background-position: 100% 50%
+    }
+
+    100% {
+        background-position: 0% 50%
+    }
+}
+
+.auth_card {
+    display: flex;
+    width: 100%;
+    max-width: 1000px;
+    background-color: var(--background-color);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    /* Add entry animation */
+    animation: cardEntrance 0.8s ease-out;
+    transition: box-shadow 0.3s ease;
+}
+
+.auth_card:hover {
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes cardEntrance {
+    from {
+        opacity: 0;
+        transform: translateY(25px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.auth_left {
+    flex: 1;
+    background-color: var(--primary-color);
+    color: white;
+    padding: var(--space-xl);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Pharma-themed background pattern on auth_left */
+.auth_left::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: radial-gradient(circle at 20% 70%, rgba(255, 255, 255, 0.15) 5%, transparent 5%),
+        radial-gradient(circle at 70% 20%, rgba(255, 255, 255, 0.1) 5%, transparent 5%),
+        radial-gradient(circle at 40% 30%, rgba(255, 255, 255, 0.15) 3%, transparent 3%),
+        radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 4%, transparent 4%);
+    background-size: 40px 40px;
+    opacity: 0.5;
+    z-index: 0;
+}
+
+.auth_left h1 {
+    font-size: var(--font-size-3xl);
+    margin-bottom: var(--space-md);
+    line-height: var(--line-height-tight);
+    font-weight: var(--font-weight-bold);
+    position: relative;
+    z-index: 1;
+    animation: fadeSlideIn 0.8s ease-out 0.2s both;
+}
+
+.auth_left p {
+    font-size: var(--font-size-md);
+    line-height: var(--line-height-loose);
+    opacity: 0.9;
+    position: relative;
+    z-index: 1;
+    animation: fadeSlideIn 0.8s ease-out 0.4s both;
+}
+
+@keyframes fadeSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.auth_right {
+    flex: 1;
+    padding: var(--space-xl);
+    background-color: var(--background-color);
+}
+
+/* Form styling */
+.form_group {
+    margin-bottom: var(--space-lg);
+    animation: formFieldAppear 0.5s ease-out forwards;
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+/* Staggered animation for form groups */
+.form_group:nth-child(1) {
+    animation-delay: 0.3s;
+}
+
+.form_group:nth-child(2) {
+    animation-delay: 0.4s;
+}
+
+.form_group:nth-child(3) {
+    animation-delay: 0.5s;
+}
+
+.form_group:nth-child(4) {
+    animation-delay: 0.6s;
+}
+
+.form_group:nth-child(5) {
+    animation-delay: 0.7s;
+}
+
+@keyframes formFieldAppear {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.form_group label {
+    display: block;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-color);
+    margin-bottom: var(--space-xs);
+    transition: color 0.3s ease;
+}
+
+.form_control {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: var(--font-size-base);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background-color: white;
+    color: var(--text-color);
+    transition: border-color 0.3s, box-shadow 0.3s, transform 0.2s;
+}
+
+.form_control:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(44, 139, 128, 0.2);
+    transform: translateY(-2px);
+}
+
+.btn_submit {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: var(--space-md);
+    position: relative;
+    overflow: hidden;
+    animation: formFieldAppear 0.5s ease-out 0.8s forwards;
+    opacity: 0;
+}
+
+.btn_submit:hover {
+    background-color: #237067;
+    /* Darker version of primary */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(44, 139, 128, 0.3);
+}
+
+.btn_submit:active {
+    transform: translateY(1px);
+}
+
+/* Button ripple effect */
+.btn_submit::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 5px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.5);
+    opacity: 0;
+    border-radius: 100%;
+    transform: scale(1) translate(-50%, -50%);
+    transform-origin: 0 0;
+}
+
+.btn_submit:focus:not(:active)::after {
+    animation: ripple 0.5s ease-out;
+}
+
+@keyframes ripple {
+    0% {
+        transform: scale(0) translate(-50%, -50%);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(25) translate(-50%, -50%);
+        opacity: 0;
+    }
+}
+
+.btn_submit:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.form_error {
+    background-color: #f8d7da;
+    color: #842029;
+    padding: 12px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    text-align: center;
+    animation: fadeIn 0.5s;
+}
+
+.auth_footer {
+    margin-top: var(--space-xl);
+    text-align: center;
+    font-size: var(--font-size-sm);
+    color: var(--text-color);
+    animation: fadeIn 1s ease-out 1s forwards;
+    opacity: 0;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.auth_footer a {
+    color: var(--primary-color);
+    font-weight: var(--font-weight-medium);
+    text-decoration: none;
+    transition: color 0.3s;
+    position: relative;
+}
+
+.auth_footer a::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 1px;
+    bottom: -2px;
+    left: 0;
+    background-color: var(--primary-color);
+    transform: scaleX(0);
+    transform-origin: bottom right;
+    transition: transform 0.3s ease-out;
+}
+
+.auth_footer a:hover {
+    text-decoration: none;
+}
+
+.auth_footer a:hover::after {
+    transform: scaleX(1);
+    transform-origin: bottom left;
+}
+
+/* Sign Up Form specific styles */
+.auth_container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-md);
+    background-color: var(--background);
+    width: 100%;
+    /* Add subtle background animation for pharma theme */
+    background: linear-gradient(120deg, var(--background), rgba(44, 139, 128, 0.05));
+    background-size: 400% 400%;
+    animation: gradientBackground 15s ease infinite;
+}
+
+.auth_content {
+    width: 100%;
+    max-width: 60em;
+    min-height: 35em;
+    background-color: var(--background-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    display: flex;
+    justify-content: space-between;
+    animation: cardEntrance 0.8s ease-out;
+    transition: box-shadow 0.3s ease;
+}
+
+.auth_content:hover {
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+}
+
+.auth_header {
+    padding: var(--space-xl) var(--space-xl) var(--space-lg);
+    background-color: var(--background-color);
+    border-bottom: 1px solid var(--border-color);
+    animation: fadeSlideIn 0.8s ease-out both;
+}
+
+.label_text {
+    display: inline-block;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--primary-color);
+    margin-bottom: var(--space-lg);
+    background-color: var(--border-color);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-lg);
+    animation: pulseLabel 2s infinite ease-in-out;
+}
+
+@keyframes pulseLabel {
+
+    0%,
+    100% {
+        transform: scale(1);
+        background-color: var(--border-color);
+    }
+
+    50% {
+        transform: scale(1.05);
+        background-color: rgba(44, 139, 128, 0.1);
+    }
+}
+
+.heading_text {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-color);
+    line-height: var(--line-height-tight);
+    animation: fadeSlideIn 0.8s ease-out 0.2s both;
+}
+
+.auth_form_section {
+    padding: var(--space-lg) var(--space-xl);
+    align-self: center;
+}
+
+.form_row {
+    display: flex;
+    gap: var(--space-md);
+    margin-bottom: var(--space-md);
+    animation: formFieldAppear 0.5s ease-out forwards;
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+/* Staggered animation for form rows */
+.form_row:nth-child(1) {
+    animation-delay: 0.3s;
+}
+
+.form_row:nth-child(2) {
+    animation-delay: 0.4s;
+}
+
+.form_row:nth-child(3) {
+    animation-delay: 0.5s;
+}
+
+.form_row:nth-child(4) {
+    animation-delay: 0.6s;
+}
+
+.form_field {
+    flex: 1;
+}
+
+.full_width {
+    width: 100%;
+}
+
+.form_field input {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: var(--font-size-base);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background-color: white;
+    color: var(--text-color);
+    transition: all 0.3s ease;
+}
+
+.form_field input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(44, 139, 128, 0.2);
+    transform: translateY(-2px);
+}
+
+.role_selector {
+    margin-bottom: var(--space-md);
+    animation: formFieldAppear 0.5s ease-out 0.7s forwards;
+    opacity: 0;
+}
+.role_selector p {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-color);
+    margin-bottom: var(--space-xs);
+}
+
+.role_options {
+    display: flex;
+    gap: var(--space-md);
+}
+
+.role_option {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.role_option::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(44, 139, 128, 0.05);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+    z-index: 0;
+}
+
+.role_option:hover::before {
+    transform: scaleX(1);
+}
+
+.role_option input {
+    position: absolute;
+    opacity: 0;
+}
+
+.role_option span {
+    margin-left: var(--space-xs);
+    position: relative;
+    z-index: 1;
+}
+
+.role_option.selected {
+    border-color: var(--primary-color);
+    background-color: rgba(44, 139, 128, 0.1);
+    &::after{
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 4px;
+        background-color: var(--primary-color);
+        animation: slideRight 0.3s ease-out forwards;
+    }
+}
+
+.role_option.selected::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 4px;
+    background-color: var(--primary-color);
+    animation: slideRight 0.3s ease-out forwards;
+}
+
+@keyframes slideRight {
+    from {
+        transform: scaleY(0);
+    }
+
+    to {
+        transform: scaleY(1);
+    }
+}
+
+.submit_button {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    animation: formFieldAppear 0.5s ease-out 0.8s forwards;
+    opacity: 0;
+}
+
+.submit_button:hover {
+    background-color: #237067;
+    /* Darker version of primary */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(44, 139, 128, 0.3);
+}
+
+.submit_button:active {
+    transform: translateY(1px);
+}
+
+/* Submit button ripple effect */
+.submit_button::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 5px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.5);
+    opacity: 0;
+    border-radius: 100%;
+    transform: scale(1) translate(-50%, -50%);
+    transform-origin: 0 0;
+}
+
+.submit_button:focus:not(:active)::after {
+    animation: ripple 0.5s ease-out;
+}
+
+.submit_button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Medical/Pharma themed loading indicator */
+.loading_indicator {
+    display: inline-block;
+    position: relative;
+    width: 64px;
+    height: 64px;
+    margin: 0 auto;
+}
+
+.loading_indicator:after {
+    content: '';
+    display: block;
+    width: 44px;
+    height: 44px;
+    margin: 8px;
+    border-radius: 50%;
+    border: 6px solid var(--primary-color);
+    border-color: var(--primary-color) transparent var(--primary-color) transparent;
+    animation: loading_indicator 1.2s linear infinite;
+}
+
+@keyframes loading_indicator {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Dark mode adaptations */
+@media (prefers-color-scheme: dark) {
+
+    .auth_card,
+    .auth_content,
+    .auth_header,
+    .auth_right {
+        background-color: #111;
+    }
+
+    .form_control,
+    .form_field input {
+        background-color: #1a1a1a;
+        border-color: #333;
+        color: var(--foreground);
+    }
+
+    .auth_left {
+        background-color: #1f6960;
+        /* Darker primary for dark mode */
+    }
+
+    .auth_left::before {
+        opacity: 0.2;
+    }
+
+    .role_option {
+        background-color: #1a1a1a;
+        border-color: #333;
+    }
+
+    .role_option.selected {
+        background-color: rgba(44, 139, 128, 0.2);
+    }
+
+    .form_error {
+        background-color: rgba(229, 110, 110, 0.1);
+    }
+
+    .auth_page,
+    .auth_container {
+        background: linear-gradient(120deg, #111, rgba(44, 139, 128, 0.1));
+        background-size: 400% 400%;
+        animation: gradientBackground 15s ease infinite;
+    }
+
+    @keyframes gradientBackground {
+        0% {
+            background-position: 0% 50%
+        }
+
+        50% {
+            background-position: 100% 50%
+        }
+
+        100% {
+            background-position: 0% 50%
+        }
+    }
+}
+
+/* Responsive design improvements */
+@media (max-width: 768px) {
+    .auth_card {
+        flex-direction: column;
+        max-width: 500px;
+    }
+
+    .auth_content {
+        flex-direction: column;
+        min-height: auto;
+    }
+
+    .auth_left {
+        padding: var(--space-lg);
+        min-height: 200px;
+    }
+
+    .auth_right {
+        padding: var(--space-lg);
+    }
+
+    .form_row {
+        flex-direction: column;
+        gap: var(--space-sm);
+    }
+
+    .auth_header {
+        padding: var(--space-lg) var(--space-lg) var(--space-md);
+    }
+
+    .auth_form_section {
+        padding: var(--space-md) var(--space-lg);
+        width:100%;
+    }
+
+    .role_options {
+        flex-direction: column;
+        gap: var(--space-sm);
+    }
+
+    .auth_left h1 {
+        font-size: var(--font-size-2xl);
+    }
+
+    .auth_left p {
+        font-size: var(--font-size-sm);
+    }
+
+    .heading_text {
+        font-size: var(--font-size-xl);
+    }
+}
+
+/* Additional responsive fixes for very small screens */
+@media (max-width: 480px) {
+
+    .auth_page,
+    .auth_container {
+        padding: var(--space-sm);
+    }
+
+    .auth_card,
+    .auth_content {
+        box-shadow: var(--shadow-md);
+    }
+
+    .auth_left {
+        min-height: 150px;
+        padding: var(--space-md);
+    }
+
+    .auth_right,
+    .auth_header,
+    .auth_form_section {
+        padding: var(--space-md);
+    }
+
+    .label_text {
+        margin-bottom: var(--space-md);
+    }
+
+    .form_group,
+    .form_row {
+        margin-bottom: var(--space-md);
+    }
+
+    .form_control,
+    .form_field input,
+    .btn_submit,
+    .submit_button {
+        padding: 0.6rem;
+    }
+
+    .role_option {
+        padding: var(--space-xs) var(--space-sm);
+    }
+}
+
+/* Fix for iOS devices to handle form elements properly */
+@supports (-webkit-touch-callout: none) {
+
+    .form_control,
+    .form_field input {
+        font-size: 16px;
+        /* Prevents zooming on focus */
+    }
+}
+
+.form_success {
+  background-color: #e7f5ea;
+  color: #0f5132;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  text-align: center;
+  animation: fadeIn 0.5s;
+}
+
+.form_hint {
+  color: #666;
+  font-size: 0.8rem;
+  margin-top: 4px;
+  display: block;
+}
+
+.password_options {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.forgot_password {
+  font-size: 0.8rem;
+  color: #555;
+  text-decoration: none;
+}
+
+.forgot_password:hover {
+  text-decoration: underline;
+}
+
+.remember_me {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.checkbox_container {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 0.9rem;
+  user-select: none;
+}
+
+.checkbox_container input {
+  margin-right: 8px;
+}
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.btn_submit:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.form_control {
+  transition: border-color 0.3s ease;
+}
+
+.form_control:focus {
+  border-color: #4a6cf7;
+  box-shadow: 0 0 0 2px rgba(74, 108, 247, 0.2);
+}
+
+.btn_submit {
+  transition: background-color 0.3s ease, transform 0.1s ease;
+}
+
+.btn_submit:not(:disabled):hover {
+  background-color: #3450db;
+}
+
+.btn_submit:not(:disabled):active {
+  transform: scale(0.98);
+}

@@ -1,0 +1,324 @@
+/* Navigation styles */
+.nav {
+    background-color: var(--background-color);
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: var(--shadow-sm);
+    padding: var(--space-xs) 0;
+}
+
+.container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-sm) var(--space-lg);
+    margin: 0 auto;
+    max-width: 1280px;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    z-index: 10;
+}
+
+.brandText {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--primary-color);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.menu {
+    display: flex;
+    align-items: center;
+    gap: var(--space-lg);
+}
+
+.navLink {
+    color: var(--text-color-secondary);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    text-decoration: none;
+    padding: var(--space-xs) 0;
+    transition: color 0.3s ease, border-bottom 0.3s ease;
+    border-bottom: 2px solid transparent;
+}
+
+.navLink:hover,
+.navLink.active {
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.refillButton {
+    color: var(--primary-color);
+    font-weight: var(--font-weight-medium);
+    text-decoration: none;
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--primary-color);
+    border-radius: var(--radius-sm);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.refillButton:hover {
+    background-color: var(--primary-color-light);
+    color: var(--primary-color-dark);
+}
+
+.becomePatientButton {
+    background-color: var(--primary-color);
+    color: var(--text-color-light);
+    font-weight: var(--font-weight-medium);
+    text-decoration: none;
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-sm);
+    transition: background-color 0.3s ease;
+}
+
+.becomePatientButton:hover {
+    background-color: var(--primary-color-dark);
+}
+
+/* Mobile Menu */
+.mobileMenuButton {
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 30px;
+    height: 21px;
+    cursor: pointer;
+    z-index: 10;
+}
+
+.bar {
+    height: 3px;
+    width: 100%;
+    background-color: var(--text-color-secondary);
+    border-radius: var(--radius-full);
+    transition: all 0.3s ease-in-out;
+}
+
+.mobileMenuButton.active .bar:nth-child(1) {
+    transform: translateY(9px) rotate(45deg);
+}
+
+.mobileMenuButton.active .bar:nth-child(2) {
+    opacity: 0;
+}
+
+.mobileMenuButton.active .bar:nth-child(3) {
+    transform: translateY(-9px) rotate(-45deg);
+}
+
+.mobileMenu {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 70%;
+    max-width: 300px;
+    height: 100vh;
+    background-color: var(--background-color);
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-xl) var(--space-lg);
+    transition: right 0.3s ease-in-out;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+    z-index: 999;
+    align-items: flex-start;
+    overflow-y: auto;
+}
+
+.mobileMenu.active {
+    right: 0;
+}
+
+.mobileNavLink {
+    color: var(--text-color-secondary);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    text-decoration: none;
+    padding: var(--space-sm) 0;
+    border-bottom: 1px solid var(--border-color);
+    width: 100%;
+    transition: color 0.3s ease;
+}
+
+.mobileNavLink:last-child {
+    border-bottom: none;
+}
+
+.mobileNavLink:hover,
+.mobileNavLink.active {
+    color: var(--primary-color);
+}
+
+.mobileRefillButton {
+    color: var(--primary-color);
+    font-weight: var(--font-weight-medium);
+    text-decoration: none;
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--primary-color);
+    border-radius: var(--radius-sm);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    width: 100%;
+    text-align: center;
+    margin-top: var(--space-md);
+}
+
+.mobileRefillButton:hover {
+    background-color: var(--primary-color-light);
+    color: var(--primary-color-dark);
+}
+
+.mobileBecomePatientButton {
+    background-color: var(--primary-color);
+    color: var(--text-color-light);
+    font-weight: var(--font-weight-medium);
+    text-decoration: none;
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-sm);
+    transition: background-color 0.3s ease;
+    width: 100%;
+    text-align: center;
+    margin-top: var(--space-sm);
+}
+
+.mobileBecomePatientButton:hover {
+    background-color: var(--primary-color-dark);
+}
+
+.mobileAuthSection {
+    width: 100%;
+    margin-top: var(--space-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.mobileAuthButton {
+    width: 100%;
+    padding: var(--space-sm) var(--space-md);
+    background-color: var(--error-color);
+    color: var(--text-color-light);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+}
+
+.mobileSignUpButton {
+    width: 100%;
+    padding: var(--space-sm) var(--space-md);
+    background-color: var(--secondary-color);
+    color: var(--text-color-light);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-weight: var(--font-weight-medium);
+    text-align: center;
+    text-decoration: none;
+    margin-top: var(--space-sm);
+    transition: background-color 0.3s ease;
+}
+
+.mobileSignUpButton:hover {
+    background-color: var(--secondary-color-dark);
+}
+
+.menuOverlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 998;
+    transition: opacity 0.3s ease;
+    opacity: 0;
+}
+
+.menuOverlay.active {
+    display: block;
+    opacity: 1;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+    .menu {
+        display: none;
+    }
+    .actions {
+        display: none;
+    }
+    .mobileMenuButton {
+        display: flex;
+    }
+    .mobileMenu {
+        display: flex; /* Ensure it's set to flex even when not active */
+    }
+}
+
+@media (min-width: 769px) {
+    .mobileMenuButton {
+        display: none;
+    }
+    .mobileMenu {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: var(--space-xs) var(--space-sm);
+    }
+
+    .brandText {
+        font-size: var(--font-size-lg);
+    }
+
+    .navLink {
+        font-size: var(--font-size-sm);
+    }
+
+    .mobileMenu {
+        width: 85%; /* Slightly wider on very small screens for better readability */
+        padding: var(--space-lg) var(--space-md);
+    }
+}
+
+@media (min-width: 1024px) {
+    .container {
+        max-width: 1440px;
+    }
+
+    .brandText {
+        font-size: var(--font-size-xxl);
+    }
+
+    .navLink {
+        font-size: var(--font-size-lg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mobileMenu,
+    .menuOverlay,
+    .bar,
+    .navLink,
+    .mobileNavLink {
+        transition: none;
+    }
+}
