@@ -30,13 +30,13 @@
 
 .auth_card {
     display: flex;
+    flex-direction: row;
     width: 100%;
-    max-width: 1000px;
+    max-width: 900px;
     background-color: var(--background-color);
     border-radius: var(--radius-lg);
     overflow: hidden;
     box-shadow: var(--shadow-lg);
-    /* Add entry animation */
     animation: cardEntrance 0.8s ease-out;
     transition: box-shadow 0.3s ease;
 }
@@ -61,10 +61,11 @@
     flex: 1;
     background-color: var(--primary-color);
     color: white;
-    padding: var(--space-xl);
+    padding: var(--space-lg);
     display: flex;
     flex-direction: column;
     justify-content: center;
+    align-items: flex-start;
     position: relative;
     overflow: hidden;
 }
@@ -78,31 +79,27 @@
     right: 0;
     bottom: 0;
     background-image: radial-gradient(circle at 20% 70%, rgba(255, 255, 255, 0.15) 5%, transparent 5%),
-        radial-gradient(circle at 70% 20%, rgba(255, 255, 255, 0.1) 5%, transparent 5%),
-        radial-gradient(circle at 40% 30%, rgba(255, 255, 255, 0.15) 3%, transparent 3%),
-        radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 4%, transparent 4%);
+        radial-gradient(circle at 70% 20%, rgba(255, 255, 255, 0.1) 5%, transparent 5%);
     background-size: 40px 40px;
     opacity: 0.5;
     z-index: 0;
 }
 
 .auth_left h1 {
-    font-size: var(--font-size-3xl);
-    margin-bottom: var(--space-md);
+    font-size: var(--font-size-2xl);
+    margin-bottom: var(--space-sm);
     line-height: var(--line-height-tight);
     font-weight: var(--font-weight-bold);
     position: relative;
     z-index: 1;
-    animation: fadeSlideIn 0.8s ease-out 0.2s both;
 }
 
 .auth_left p {
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-base);
     line-height: var(--line-height-loose);
     opacity: 0.9;
     position: relative;
     z-index: 1;
-    animation: fadeSlideIn 0.8s ease-out 0.4s both;
 }
 
 @keyframes fadeSlideIn {
@@ -119,13 +116,16 @@
 
 .auth_right {
     flex: 1;
-    padding: var(--space-xl);
+    padding: var(--space-lg);
     background-color: var(--background-color);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 /* Form styling */
 .form_group {
-    margin-bottom: var(--space-lg);
+    margin-bottom: var(--space-md);
     animation: formFieldAppear 0.5s ease-out forwards;
     opacity: 0;
     transform: translateY(10px);
@@ -730,6 +730,28 @@
     .heading_text {
         font-size: var(--font-size-xl);
     }
+
+    .auth_left {
+        padding: var(--space-md);
+        align-items: center;
+        text-align: center;
+    }
+
+    .auth_left h1 {
+        font-size: var(--font-size-xl);
+    }
+
+    .auth_left p {
+        font-size: var(--font-size-sm);
+    }
+
+    .auth_right {
+        padding: var(--space-md);
+    }
+
+    .auth_form {
+        max-width: 100%;
+    }
 }
 
 /* Additional responsive fixes for very small screens */
@@ -774,6 +796,18 @@
 
     .role_option {
         padding: var(--space-xs) var(--space-sm);
+    }
+
+    .auth_left h1 {
+        font-size: var(--font-size-lg);
+    }
+
+    .auth_left p {
+        font-size: var(--font-size-xs);
+    }
+
+    .submit_button {
+        padding: 0.6rem;
     }
 }
 
@@ -877,4 +911,49 @@
 
 .btn_submit:not(:disabled):active {
   transform: scale(0.98);
+}
+
+.auth_form {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.form_options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-md);
+}
+
+.checkbox_container {
+    display: flex;
+    align-items: center;
+    font-size: var(--font-size-sm);
+}
+
+.forgot_link {
+    font-size: var(--font-size-sm);
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.forgot_link:hover {
+    text-decoration: underline;
+}
+
+.auth_links {
+    margin-top: var(--space-md);
+    text-align: center;
+    font-size: var(--font-size-sm);
+}
+
+.auth_links a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: var(--font-weight-medium);
+}
+
+.auth_links a:hover {
+    text-decoration: underline;
 }

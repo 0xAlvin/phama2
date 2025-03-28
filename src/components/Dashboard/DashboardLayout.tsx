@@ -200,7 +200,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children}) => {
                         <Menu className={styles.menuIcon} />
                     </button>
                     <div className={styles.headerActions}>
-                        {"Title"}
                         <SearchBar />
                         <NotificationsButton count={3} />
                         <ProfileButton

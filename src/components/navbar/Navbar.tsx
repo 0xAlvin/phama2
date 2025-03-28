@@ -84,10 +84,9 @@ const Navigation = () => {
 
         <div className={styles.menu}>
           <Link href="/" className={`${styles.navLink} ${isActive('/')}`}>Home</Link>
-          <Link href="/about" className={`${styles.navLink} ${isActive('/about')}`}>About us</Link>
-          <Link href="/services" className={`${styles.navLink} ${isActive('/services')}`}>Services</Link>
-          <Link href="/mobile" className={`${styles.navLink} ${isActive('/mobile')}`}>Mobile</Link>
-          <Link href="/resources" className={`${styles.navLink} ${isActive('/resources')}`}>Resources</Link>
+          <Link href="#about" className={`${styles.navLink} ${isActive('#about')}`}>About us</Link>
+          <Link href="#services" className={`${styles.navLink} ${isActive('#services')}`}>Services</Link>
+          <Link href="#features" className={`${styles.navLink} ${isActive('#feasture')}`}>Features</Link>
         </div>
 
         <div className={styles.actions}>

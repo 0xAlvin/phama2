@@ -4,20 +4,18 @@ import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import styles from "@/styles/auth/auth.module.css";
 
-export default function SignInForm({ 
-  onSignIn 
-}: Readonly<{ 
-  onSignIn: (
-    email: string, 
-    password: string, 
-    remember: boolean,
-    callbackUrl?: string
-  ) => Promise<{
-    success: boolean,
-    url?: string,
-    error?: string
-  }> 
-}>) {
+type SignInResult = {
+  success: boolean;
+  url?: string;
+  error?: string;
+};
+
+// Define SignInFormProps without the function prop
+type SignInFormProps = {
+  // You can keep serializable props here if needed
+};
+
+export default function SignInForm({}: SignInFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
@@ -36,12 +34,22 @@ export default function SignInForm({
     
     try {
       console.log(`Submitting signin form with callbackUrl: ${callbackUrl}`);
-      const result = await onSignIn(email, password, remember, callbackUrl);
+      // Replace with direct API call instead of using the function prop
+      const response = await fetch('/api/auth/signin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password, remember, callbackUrl }),
+      });
+      
+      const result: SignInResult = await response.json();
       
       if (!result.success) {
         setError(result.error || 'An error occurred');
+      } else if (result.url) {
+        router.push(result.url);
       }
-      // No need to redirect here as it's handled in the parent component
     } catch (err) {
       console.error('Form submission error:', err);
       setError('An unexpected error occurred');
@@ -50,18 +58,17 @@ export default function SignInForm({
     }
   };
 
-  // Rest of the component...
   return (
     <div className={styles.auth_page}>
       <div className={styles.auth_card}>
-        <div className={styles.auth_content}>
-          <div className={styles.auth_header}>
-            <h1 className={styles.heading_text}>Welcome back</h1>
-            <p className={styles.subheading_text}>Sign in to your account</p>
-          </div>
-          
+        <div className={styles.auth_left}>
+          <h1>Welcome back</h1>
+          <p>Sign in to your account</p>
+        </div>
+        
+        <div className={styles.auth_right}>
           {error && (
-            <div className={styles.error_message}>
+            <div className={styles.form_error}>
               {error}
             </div>
           )}
@@ -101,7 +108,6 @@ export default function SignInForm({
                   onChange={(e) => setRemember(e.target.checked)}
                   disabled={isLoading || isSubmitting}
                 />
-                <span className={styles.checkmark}></span>
                 Remember me
               </label>
               
@@ -112,15 +118,20 @@ export default function SignInForm({
             
             <button 
               type="submit" 
-              className={styles.submit_button}
+              className={styles.btn_submit}
               disabled={isLoading || isSubmitting}
             >
-              {isSubmitting ? 'Signing in...' : 'Sign in'}
+              {isSubmitting ? (
+                <>
+                  <span className={styles.spinner}></span>
+                  Signing in...
+                </>
+              ) : 'Sign in'}
             </button>
             
             <div className={styles.auth_links}>
               Don't have an account?{' '}
-              <a href="/signup" className={styles.auth_link}>
+              <a href="/signup">
                 Sign up
               </a>
             </div>
