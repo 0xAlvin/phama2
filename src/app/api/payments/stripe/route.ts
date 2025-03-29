@@ -6,19 +6,23 @@ import Stripe from 'stripe';
 
 // Initialize Stripe with your secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2023-10-16', // Use the latest Stripe API version
+  apiVersion: '2025-02-24.acacia', // Use the latest Stripe API version
 });
 
 export async function POST(request: Request) {
   try {
     // Authenticate the request
-    const session = await auth();
-    if (!session || !session.user) {
+    const authSession = await auth();
+    if (!authSession || !authSession.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Get user from session
-    const userId = session.user.id;
+    const userId = authSession.user.id;
+    
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    }
     
     // Parse request body
     const { items, totalAmount } = await request.json();
@@ -85,7 +89,7 @@ export async function POST(request: Request) {
     }));
 
     // Create the Stripe session
-    const session = await stripe.checkout.sessions.create({
+    const stripeSession = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: lineItems,
       mode: 'payment',
@@ -102,12 +106,12 @@ export async function POST(request: Request) {
       amount: totalAmount,
       paymentMethod: 'stripe',
       status: 'pending',
-      transactionId: session.id,
+      transactionId: stripeSession.id,
     }).returning();
 
     return NextResponse.json({
       success: true,
-      url: session.url,
+      url: stripeSession.url,
       orderId: orderResult.id,
       transactionId: paymentRecord.id,
     });

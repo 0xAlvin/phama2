@@ -14,6 +14,10 @@ export async function GET(request: Request) {
     // Get user from session
     const userId = session.user.id;
     
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID not found' }, { status: 400 });
+    }
+    
     // Get patient info
     const patient = await db.query.patients.findFirst({
       where: (patients, { eq }) => eq(patients.userId, userId)
@@ -26,7 +30,7 @@ export async function GET(request: Request) {
     // Get orders for the patient
     const ordersList = await db.query.orders.findMany({
       where: (orders, { eq }) => eq(orders.patientId, patient.id),
-      orderBy: desc(orders.createdAt),
+      orderBy: (orders) => [desc(orders.createdAt)],
       with: {
         payment: true,
         pharmacy: true

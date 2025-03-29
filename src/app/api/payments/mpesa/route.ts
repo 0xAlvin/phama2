@@ -14,6 +14,10 @@ export async function POST(request: Request) {
     // Get user from session
     const userId = session.user.id;
     
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID not found in session' }, { status: 400 });
+    }
+    
     // Parse request body
     const { items, totalAmount, phoneNumber } = await request.json();
     
