@@ -37,18 +37,8 @@ const CartItemCard: React.FC<CartItemCardProps> = ({ item }) => {
       return '/images/placeholder.png';
     }
     
-    // First check for inventory_image
+    // Check for imageUrl
     if (product.imageUrl && typeof product.imageUrl === 'string' && product.imageUrl.trim() !== '') {
-      return product.imageUrl;
-    }
-    
-    // Then check for imageUrl 
-    if (product.imageUrl && typeof product.imageUrl === 'string' && product.imageUrl.trim() !== '') {
-      return product.imageUrl;
-    }
-    
-    // Check for image property
-    if (product.imageUrl && typeof product.imageUrl === 'string' && product.image.trim() !== '') {
       return product.imageUrl;
     }
     

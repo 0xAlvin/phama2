@@ -1,59 +1,46 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { useCart } from '@/contexts/CartContext';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import styles from './Cart.module.css';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import DashboardHeader from '@/components/layout/DashboardHeader';
+import { useCart } from '@/contexts/CartContext';
 import CartItemCard from '@/components/cart/CartItemCard';
-import RouteGuard from '@/components/Auth/RouteGuard';
+import { useRouter } from 'next/navigation';
+import styles from './cart.module.css';
 
 export default function CartPage() {
-  const { items, totalItems, totalPrice, cartByPharmacy } = useCart();
-  const { status } = useSession();
+  const { cart, getCartTotal } = useCart();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
 
+  // Ensure we're mounted before rendering cart contents
+  // This is important for hydration with Zustand persist
   useEffect(() => {
-    // Redirect to login if not authenticated
-    if (status === 'unauthenticated') {
-      router.push('/signin');
-    }
-  }, [status, router]);
+    setMounted(true);
+  }, []);
 
   const handleCheckout = () => {
     router.push('/checkout');
   };
 
-  if (status === 'loading') {
-    return (
-      <div className={styles.container}>
-        <DashboardHeader />
-        <div className={styles.loading}>
-          <div className={styles.loadingSpinner}></div>
-          <span>Loading cart...</span>
-        </div>
-      </div>
-    );
+  // Show loading state until client-side hydration is complete
+  if (!mounted) {
+    return <div className={styles.loading}>Loading your cart...</div>;
   }
 
-  if (totalItems === 0) {
+  if (cart.length === 0) {
     return (
-      <div className={styles.container}>
-        <DashboardHeader />
+      <div className={styles.emptyCartContainer}>
+        <h1 className={styles.pageTitle}>Your Cart</h1>
         <div className={styles.emptyCart}>
-          <div className={styles.emptyCartIcon}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="9" cy="21" r="1"></circle>
-              <circle cx="20" cy="21" r="1"></circle>
-              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-            </svg>
-          </div>
+          <svg className={styles.emptyCartIcon} xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="9" cy="21" r="1"></circle>
+            <circle cx="20" cy="21" r="1"></circle>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+          </svg>
           <h2>Your cart is empty</h2>
           <p>Looks like you haven't added any medications to your cart yet.</p>
           <Link href="/shop" className={styles.shopButton}>
-            Browse Medications
+            Shop for Medications
           </Link>
         </div>
       </div>
@@ -61,67 +48,48 @@ export default function CartPage() {
   }
 
   return (
-    <RouteGuard>
-      <div className={styles.container}>
-        <DashboardHeader />
-        <div className={styles.header}>
-          <h1>Your Cart</h1>
-          <span className={styles.itemCount}>({totalItems} {totalItems === 1 ? 'item' : 'items'})</span>
+    <div className={styles.cartPage}>
+      <h1 className={styles.pageTitle}>Your Cart</h1>
+      
+      <div className={styles.cartContainer}>
+        <div className={styles.cartItems}>
+          {cart.map((item) => (
+            <CartItemCard key={item.product.id} item={item} />
+          ))}
         </div>
-
-        <div className={styles.cartContent}>
-          <div className={styles.cartItems}>
-            {Object.entries(cartByPharmacy).map(([pharmacyId, pharmacyItems]) => (
-              <div key={pharmacyId} className={styles.pharmacyGroup}>
-                <div className={styles.pharmacyHeader}>
-                  <h2>{pharmacyItems[0].product.pharmacy.name}</h2>
-                  <div className={styles.pharmacyInfo}>
-                    <span>{pharmacyItems[0].product.pharmacy.address}</span>
-                    <span>{pharmacyItems[0].product.pharmacy.city}, {pharmacyItems[0].product.pharmacy.state} {pharmacyItems[0].product.pharmacy.zipCode}</span>
-                  </div>
-                </div>
-                
-                {pharmacyItems.map(item => (
-                  <CartItemCard key={item.product.id} item={item} />
-                ))}
-              </div>
-            ))}
+        
+        <div className={styles.cartSummary}>
+          <h2 className={styles.summaryTitle}>Order Summary</h2>
+          
+          <div className={styles.summaryRow}>
+            <span>Subtotal</span>
+            <span>Kes {getCartTotal().toFixed(2)}</span>
           </div>
-
-          <div className={styles.orderSummary}>
-            <div className={styles.orderSummaryCard}>
-              <h2>Order Summary</h2>
-              <div className={styles.summaryRow}>
-                <span>Subtotal</span>
-                <span>KES {totalPrice.toFixed(2)}</span>
-              </div>
-              <div className={styles.summaryRow}>
-                <span>Shipping</span>
-                <span>KES 599.00</span>
-              </div>
-              <div className={styles.summaryDivider}></div>
-              <div className={`${styles.summaryRow} ${styles.summaryTotal}`}>
-                <span>Total</span>
-                <span>KES {(totalPrice + 599).toFixed(2)}</span>
-              </div>
-              <button className={styles.checkoutButton} onClick={handleCheckout}>
-                Proceed to Checkout
-              </button>
-              <Link href="/shop" className={styles.continueShoppingLink}>
-                Continue Shopping
-              </Link>
-            </div>
-
-            <div className={styles.promoCard}>
-              <h3>Promo Code</h3>
-              <div className={styles.promoForm}>
-                <input type="text" placeholder="Enter promo code" />
-                <button>Apply</button>
-              </div>
-            </div>
+          
+          <div className={styles.summaryRow}>
+            <span>Shipping</span>
+            <span>Kes 0.00</span>
           </div>
+          
+          <div className={styles.divider}></div>
+          
+          <div className={styles.summaryTotal}>
+            <span>Total</span>
+            <span>Kes {getCartTotal().toFixed(2)}</span>
+          </div>
+          
+          <button 
+            className={styles.checkoutButton}
+            onClick={handleCheckout}
+          >
+            Proceed to Checkout
+          </button>
+          
+          <Link href="/shop" className={styles.continueShoppingLink}>
+            Continue Shopping
+          </Link>
         </div>
       </div>
-    </RouteGuard>
+    </div>
   );
 }

@@ -1,23 +1,18 @@
 'use client';
 
-import { Product } from '@/types/product';
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useCartStore, CartItem as StoreCartItem } from '@/lib/stores/useCartStore';
-
-// Re-export the CartItem type
-export type CartItem = StoreCartItem;
+import { useCartStore, CartItem } from '@/lib/stores/useCartStore';
 
 interface CartContextType {
-  items: CartItem[];
-  addToCart: (product: Product, quantity?: number) => Promise<boolean>;
+  cart: CartItem[];
+  addToCart: (product: any, quantity?: number) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
-  totalItems: number;
-  totalPrice: number;
-  cartByPharmacy: Record<string, CartItem[]>;
+  getCartTotal: () => number;
+  getItemCount: () => number;
   isAddingToCart: boolean;
 }
 
@@ -30,39 +25,61 @@ interface CartProviderProps {
 export function CartProvider({ children }: CartProviderProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const isAuthenticated = status === 'authenticated';
   
   // Get cart state and methods from Zustand store
-  const items = useCartStore(state => state.items);
-  const isAddingToCart = useCartStore(state => state.isAddingToCart);
-  const storeAddToCart = useCartStore(state => state.addToCart);
-  const removeFromCart = useCartStore(state => state.removeFromCart);
-  const updateQuantity = useCartStore(state => state.updateQuantity);
-  const clearCart = useCartStore(state => state.clearCart);
-  const getTotalItems = useCartStore(state => state.getTotalItems);
-  const getTotalPrice = useCartStore(state => state.getTotalPrice);
-  const getCartByPharmacy = useCartStore(state => state.getCartByPharmacy);
+  const store = useCartStore();
+  const { cart, isAddingToCart } = store;
+  
+  // Hydrate the cart store on client-side
+  useEffect(() => {
+    useCartStore.persist.rehydrate();
+  }, []);
 
-  // Wrap addToCart to add authentication check
-  const addToCart = async (product: Product, quantity = 1): Promise<boolean> => {
-    if (!isAuthenticated) {
-      // Redirect to login if user is not authenticated
-      router.push('/signin');
-      return false;
-    }
+  const addToCart = useCallback((product: any, quantity = 1) => {
+    // Optional: Uncomment if you want to require authentication
+    // if (status !== 'authenticated') {
+    //   router.push('/signin');
+    //   return;
+    // }
 
-    return await storeAddToCart(product, quantity);
-  };
+    store.addItem({
+      product,
+      quantity,
+    });
+  }, [store]);
+
+  const removeFromCart = useCallback((productId: string) => {
+    store.removeItem(productId);
+  }, [store]);
+
+  const updateQuantity = useCallback((productId: string, quantity: number) => {
+    store.updateItemQuantity(productId, quantity);
+  }, [store]);
+
+  const clearCart = useCallback(() => {
+    store.clearItems();
+  }, [store]);
+
+  const getCartTotal = useCallback(() => {
+    return cart.reduce((total, item) => {
+      return total + (item.product.price * item.quantity);
+    }, 0);
+  }, [cart]);
+
+  const getItemCount = useCallback(() => {
+    return cart.reduce((count, item) => {
+      return count + item.quantity;
+    }, 0);
+  }, [cart]);
 
   const value = {
-    items,
+    cart,
     addToCart,
     removeFromCart,
     updateQuantity,
     clearCart,
-    totalItems: getTotalItems(),
-    totalPrice: getTotalPrice(),
-    cartByPharmacy: getCartByPharmacy(),
+    getCartTotal,
+    getItemCount,
     isAddingToCart
   };
 

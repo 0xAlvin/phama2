@@ -1,111 +1,77 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Product } from '@/types/product';
+
+export interface CartProduct {
+  id: string;
+  name: string;
+  price: number;
+  imageUrl?: string;
+  inventory: number;
+  dosage?: string;
+  prescription?: boolean;
+}
 
 export interface CartItem {
-  product: Product;
+  product: CartProduct;
   quantity: number;
 }
 
 interface CartState {
-  items: CartItem[];
+  cart: CartItem[];
   isAddingToCart: boolean;
-  addToCart: (product: Product, quantity?: number) => Promise<boolean>;
-  removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
-  clearCart: () => void;
-  getTotalItems: () => number;
-  getTotalPrice: () => number;
-  getCartByPharmacy: () => Record<string, CartItem[]>;
+  addItem: (item: CartItem) => void;
+  removeItem: (productId: string) => void;
+  updateItemQuantity: (productId: string, quantity: number) => void;
+  clearItems: () => void;
 }
 
 export const useCartStore = create<CartState>()(
   persist(
-    (set, get) => ({
-      items: [],
+    (set) => ({
+      cart: [],
       isAddingToCart: false,
-
-      addToCart: async (product, quantity = 1) => {
+      
+      addItem: (item) => {
         set({ isAddingToCart: true });
         
-        try {
-          set((state) => {
-            const existingItem = state.items.find(item => item.product.id === product.id);
-            
-            if (existingItem) {
-              return {
-                items: state.items.map(item => 
-                  item.product.id === product.id 
-                    ? { ...item, quantity: item.quantity + quantity } 
-                    : item
-                )
-              };
-            } else {
-              return {
-                items: [...state.items, { product, quantity }]
-              };
-            }
-          });
+        set((state) => {
+          const existingItem = state.cart.find(
+            (cartItem) => cartItem.product.id === item.product.id
+          );
           
-          set({ isAddingToCart: false });
-          return true;
-        } catch (error) {
-          console.error('Error adding to cart:', error);
-          set({ isAddingToCart: false });
-          return false;
-        }
-      },
-      
-      removeFromCart: (productId) => {
-        set((state) => ({
-          items: state.items.filter(item => item.product.id !== productId)
-        }));
-      },
-      
-      updateQuantity: (productId, quantity) => {
-        if (quantity <= 0) {
-          get().removeFromCart(productId);
-          return;
-        }
-        
-        set((state) => ({
-          items: state.items.map(item => 
-            item.product.id === productId 
-              ? { ...item, quantity } 
-              : item
-          )
-        }));
-      },
-      
-      clearCart: () => {
-        set({ items: [] });
-      },
-      
-      getTotalItems: () => {
-        return get().items.reduce((sum, item) => sum + item.quantity, 0);
-      },
-      
-      getTotalPrice: () => {
-        return get().items.reduce(
-          (sum, item) => sum + (item.product.price * item.quantity),
-          0
-        );
-      },
-      
-      getCartByPharmacy: () => {
-        return get().items.reduce((grouped, item) => {
-          const pharmacyId = item.product.pharmacy.id;
-          if (!grouped[pharmacyId]) {
-            grouped[pharmacyId] = [];
+          if (existingItem) {
+            return {
+              cart: state.cart.map((cartItem) => 
+                cartItem.product.id === item.product.id
+                  ? { ...cartItem, quantity: cartItem.quantity + item.quantity }
+                  : cartItem
+              ),
+              isAddingToCart: false,
+            };
           }
-          grouped[pharmacyId].push(item);
-          return grouped;
-        }, {} as Record<string, CartItem[]>);
-      }
+          
+          return { 
+            cart: [...state.cart, item],
+            isAddingToCart: false,
+          };
+        });
+      },
+      
+      removeItem: (productId) => set((state) => ({
+        cart: state.cart.filter((item) => item.product.id !== productId),
+      })),
+      
+      updateItemQuantity: (productId, quantity) => set((state) => ({
+        cart: state.cart.map((item) =>
+          item.product.id === productId ? { ...item, quantity } : item
+        ),
+      })),
+      
+      clearItems: () => set({ cart: [] }),
     }),
     {
-      name: 'phamapp-cart',
-      partialize: (state) => ({ items: state.items })
+      name: 'cart-storage',
+      skipHydration: true,
     }
   )
 );
