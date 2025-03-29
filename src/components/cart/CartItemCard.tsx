@@ -34,7 +34,7 @@ const CartItemCard: React.FC<CartItemCardProps> = ({ item }) => {
   const getProductImageSrc = () => {
     // First check if we already have an error
     if (imageError) {
-      return '/images/placeholder.png';
+      return '/images/placeholder-medicine.jpg';
     }
     
     // Check for imageUrl

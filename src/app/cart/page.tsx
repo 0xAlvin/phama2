@@ -6,6 +6,7 @@ import { useCart } from '@/contexts/CartContext';
 import CartItemCard from '@/components/cart/CartItemCard';
 import { useRouter } from 'next/navigation';
 import styles from './cart.module.css';
+import DashboardLayout from '@/components/Dashboard/DashboardLayout';
 
 export default function CartPage() {
   const { cart, getCartTotal } = useCart();
@@ -48,48 +49,50 @@ export default function CartPage() {
   }
 
   return (
-    <div className={styles.cartPage}>
-      <h1 className={styles.pageTitle}>Your Cart</h1>
-      
-      <div className={styles.cartContainer}>
-        <div className={styles.cartItems}>
-          {cart.map((item) => (
-            <CartItemCard key={item.product.id} item={item} />
-          ))}
-        </div>
-        
-        <div className={styles.cartSummary}>
-          <h2 className={styles.summaryTitle}>Order Summary</h2>
-          
-          <div className={styles.summaryRow}>
-            <span>Subtotal</span>
-            <span>Kes {getCartTotal().toFixed(2)}</span>
+    <DashboardLayout>
+      <div className={styles.cartPage}>
+        <h1 className={styles.pageTitle}>Your Cart</h1>
+
+        <div className={styles.cartContainer}>
+          <div className={styles.cartItems}>
+            {cart.map((item) => (
+              <CartItemCard key={item.product.id} item={item} />
+            ))}
           </div>
-          
-          <div className={styles.summaryRow}>
-            <span>Shipping</span>
-            <span>Kes 0.00</span>
+
+          <div className={styles.cartSummary}>
+            <h2 className={styles.summaryTitle}>Order Summary</h2>
+
+            <div className={styles.summaryRow}>
+              <span>Subtotal</span>
+              <span>Kes {getCartTotal().toFixed(2)}</span>
+            </div>
+
+            <div className={styles.summaryRow}>
+              <span>Shipping</span>
+              <span>Kes 0.00</span>
+            </div>
+
+            <div className={styles.divider}></div>
+
+            <div className={styles.summaryTotal}>
+              <span>Total</span>
+              <span>Kes {getCartTotal().toFixed(2)}</span>
+            </div>
+
+            <button
+              className={styles.checkoutButton}
+              onClick={handleCheckout}
+            >
+              Proceed to Checkout
+            </button>
+
+            <Link href="/shop" className={styles.continueShoppingLink}>
+              Continue Shopping
+            </Link>
           </div>
-          
-          <div className={styles.divider}></div>
-          
-          <div className={styles.summaryTotal}>
-            <span>Total</span>
-            <span>Kes {getCartTotal().toFixed(2)}</span>
-          </div>
-          
-          <button 
-            className={styles.checkoutButton}
-            onClick={handleCheckout}
-          >
-            Proceed to Checkout
-          </button>
-          
-          <Link href="/shop" className={styles.continueShoppingLink}>
-            Continue Shopping
-          </Link>
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

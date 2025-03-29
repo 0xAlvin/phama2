@@ -27,12 +27,9 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({
           onClick={() => onSelectMethod('stripe')}
         >
           <div className={styles.paymentMethodIcon}>
-            <Image 
-              src="/images/stripe-logo.png" 
-              alt="Stripe"
-              width={60} 
-              height={25}
-            />
+            <div className={styles.stripeLogo}>
+              <span>Stripe</span>
+            </div>
           </div>
           <div className={styles.paymentMethodInfo}>
             <h3>Credit / Debit Card</h3>
@@ -46,12 +43,9 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({
           onClick={() => onSelectMethod('mpesa')}
         >
           <div className={styles.paymentMethodIcon}>
-            <Image 
-              src="/images/mpesa-logo.png" 
-              alt="M-Pesa"
-              width={60} 
-              height={25}
-            />
+            <div className={styles.mpesaLogo}>
+              <span>M-Pesa</span>
+            </div>
           </div>
           <div className={styles.paymentMethodInfo}>
             <h3>M-Pesa</h3>
