@@ -30,7 +30,7 @@ export default function HeroSection() {
         <section className={`${styles.hero} ${isScrolled ? styles.heroScrolled : ''}`}>
           <div className={styles.heroContent}>
             <h1 className={styles.heroTitle}>
-              Modern Pharmaceutical Management <span className={styles.primaryText}>Simplified</span>
+              Online Phamacy <span className={styles.primaryText}>@ DAWA</span>
             </h1>
             <p className={styles.heroDescription}>
               Streamline your pharmacy operations with our comprehensive management system.

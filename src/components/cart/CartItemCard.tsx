@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import { useCart } from '@/contexts/CartContext';
 import { CartItem } from '@/lib/stores/useCartStore'; // This import will now work correctly
@@ -13,6 +13,7 @@ interface CartItemCardProps {
 const CartItemCard: React.FC<CartItemCardProps> = ({ item }) => {
   const { updateQuantity, removeFromCart } = useCart();
   const { product, quantity } = item;
+  const [imageError, setImageError] = useState(false);
 
   const handleIncrement = () => {
     if (quantity < product.inventory) {
@@ -30,15 +31,48 @@ const CartItemCard: React.FC<CartItemCardProps> = ({ item }) => {
     removeFromCart(product.id);
   };
 
+  const getProductImageSrc = () => {
+    // First check if we already have an error
+    if (imageError) {
+      return '/images/placeholder.png';
+    }
+    
+    // First check for inventory_image
+    if (product.imageUrl && typeof product.imageUrl === 'string' && product.imageUrl.trim() !== '') {
+      return product.imageUrl;
+    }
+    
+    // Then check for imageUrl 
+    if (product.imageUrl && typeof product.imageUrl === 'string' && product.imageUrl.trim() !== '') {
+      return product.imageUrl;
+    }
+    
+    // Check for image property
+    if (product.imageUrl && typeof product.imageUrl === 'string' && product.image.trim() !== '') {
+      return product.imageUrl;
+    }
+    
+    // Try product-specific path
+    if (product.id) {
+      return `/images/inventory/${product.id}.jpg`;
+    }
+    
+    // Default fallback
+    return '/images/placeholder-medicine.jpg';
+  };
+
   return (
     <div className={styles.cartItem}>
       <div className={styles.productImage}>
         <Image
-          src={product.imageUrl || '/images/placeholder-medicine.jpg'}
+          src={getProductImageSrc()}
           alt={product.name}
           fill
           sizes="120px"
           className={styles.image}
+          priority={true}
+          quality={80}
+          onError={() => setImageError(true)}
         />
       </div>
       
@@ -84,10 +118,10 @@ const CartItemCard: React.FC<CartItemCardProps> = ({ item }) => {
           </div>
           
           <div className={styles.price}>
-            <span className={styles.itemPrice}>${product.price.toFixed(2)}</span>
+            <span className={styles.itemPrice}>Kes {product.price.toFixed(2)}</span>
             {quantity > 1 && (
               <span className={styles.totalPrice}>
-                ${(product.price * quantity).toFixed(2)}
+                Kes {(product.price * quantity).toFixed(2)}
               </span>
             )}
           </div>

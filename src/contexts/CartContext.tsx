@@ -47,7 +47,7 @@ export function CartProvider({ children }: CartProviderProps) {
   const addToCart = async (product: Product, quantity = 1): Promise<boolean> => {
     if (!isAuthenticated) {
       // Redirect to login if user is not authenticated
-      router.push('/login');
+      router.push('/signin');
       return false;
     }
 

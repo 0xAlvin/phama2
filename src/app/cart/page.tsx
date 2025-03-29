@@ -18,9 +18,13 @@ export default function CartPage() {
   useEffect(() => {
     // Redirect to login if not authenticated
     if (status === 'unauthenticated') {
-      router.push('/login');
+      router.push('/signin');
     }
   }, [status, router]);
+
+  const handleCheckout = () => {
+    router.push('/checkout');
+  };
 
   if (status === 'loading') {
     return (
@@ -89,18 +93,18 @@ export default function CartPage() {
               <h2>Order Summary</h2>
               <div className={styles.summaryRow}>
                 <span>Subtotal</span>
-                <span>${totalPrice.toFixed(2)}</span>
+                <span>KES {totalPrice.toFixed(2)}</span>
               </div>
               <div className={styles.summaryRow}>
                 <span>Shipping</span>
-                <span>$5.99</span>
+                <span>KES 599.00</span>
               </div>
               <div className={styles.summaryDivider}></div>
               <div className={`${styles.summaryRow} ${styles.summaryTotal}`}>
                 <span>Total</span>
-                <span>${(totalPrice + 5.99).toFixed(2)}</span>
+                <span>KES {(totalPrice + 599).toFixed(2)}</span>
               </div>
-              <button className={styles.checkoutButton}>
+              <button className={styles.checkoutButton} onClick={handleCheckout}>
                 Proceed to Checkout
               </button>
               <Link href="/shop" className={styles.continueShoppingLink}>

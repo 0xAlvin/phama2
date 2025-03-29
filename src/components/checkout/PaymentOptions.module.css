@@ -1,0 +1,129 @@
+.paymentOptions {
+  margin: 2rem 0;
+}
+
+.sectionTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.paymentMethods {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.paymentMethod {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.paymentMethod:hover {
+  border-color: #aaa;
+}
+
+.paymentMethod.selected {
+  border-color: #4CAF50;
+  background-color: #f1f8e9;
+}
+
+.paymentMethodIcon {
+  width: 60px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
+}
+
+.paymentMethodInfo {
+  flex-grow: 1;
+}
+
+.paymentMethodInfo h3 {
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0 0 0.25rem 0;
+}
+
+.paymentMethodInfo p {
+  font-size: 0.9rem;
+  color: #666;
+  margin: 0;
+}
+
+.selectIndicator {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #ddd;
+  position: relative;
+}
+
+.selected .selectIndicator {
+  border-color: #4CAF50;
+}
+
+.selected .selectIndicator::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background-color: #4CAF50;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.paymentDetails {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+}
+
+.paymentNote {
+  font-size: 0.9rem;
+  color: #666;
+  margin: 0 0 1rem 0;
+}
+
+.mpesaPhoneInput {
+  margin-top: 1rem;
+}
+
+.mpesaPhoneInput label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+@media (max-width: 768px) {
+  .paymentMethod {
+    padding: 0.75rem;
+  }
+  
+  .paymentMethodIcon {
+    width: 50px;
+    margin-right: 0.75rem;
+  }
+}

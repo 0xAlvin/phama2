@@ -2,20 +2,18 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import styles from "@/styles/auth/auth.module.css";
 
-type SignInResult = {
-  success: boolean;
-  url?: string;
-  error?: string;
-};
-
-// Define SignInFormProps without the function prop
 type SignInFormProps = {
-  // You can keep serializable props here if needed
+  onSignIn?: (email: string, password: string, remember: boolean) => Promise<{
+    success: boolean;
+    url?: string;
+    error?: string;
+  }>;
 };
 
-export default function SignInForm({}: SignInFormProps) {
+export default function SignInForm({ onSignIn }: SignInFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
@@ -33,22 +31,29 @@ export default function SignInForm({}: SignInFormProps) {
     setIsSubmitting(true);
     
     try {
-      console.log(`Submitting signin form with callbackUrl: ${callbackUrl}`);
-      // Replace with direct API call instead of using the function prop
-      const response = await fetch('/api/auth/signin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password, remember, callbackUrl }),
-      });
-      
-      const result: SignInResult = await response.json();
-      
-      if (!result.success) {
-        setError(result.error || 'An error occurred');
-      } else if (result.url) {
-        router.push(result.url);
+      if (onSignIn) {
+        // Use the parent component's sign-in function if provided
+        const result = await onSignIn(email, password, remember);
+        if (!result.success) {
+          setError(result.error || 'An error occurred');
+        }
+      } else {
+        // Use NextAuth's signIn directly to avoid CSRF issues
+        const result = await signIn('credentials', {
+          redirect: false,
+          email,
+          password,
+          remember: remember.toString(),
+          callbackUrl
+        });
+
+        if (result?.error) {
+          setError('Invalid email or password');
+        } else if (result?.url) {
+          router.push(result.url);
+        } else {
+          router.push('/dashboard');
+        }
       }
     } catch (err) {
       console.error('Form submission error:', err);

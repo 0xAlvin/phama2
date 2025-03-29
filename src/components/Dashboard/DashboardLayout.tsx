@@ -62,6 +62,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children}) => {
         setIsSidebarOpen(false);
     };
 
+    // Default avatar if none provided in session
+    const defaultAvatar = '/avatar.jpg';
+
     return (
         <div className={styles.dashboardContainer}>
             <aside className={`${styles.sidebar} ${isSidebarOpen ? styles.open : ''}`}>
@@ -75,20 +78,15 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children}) => {
                 </div>
                 
                 <UserSession 
-                    name="John Doe"
-                    email="john.doe@example.com"
-                    avatar="/avatar.jpg"
+                    name={session?.user?.name || "Guest User"}
+                    email={session?.user?.email || "No email provided"}
+                    avatar={session?.user?.image || defaultAvatar}
                 />
                 
                 <nav className={styles.nav}>
                     <NavDivider title="Main" />
                     <ul>
                         {/* Common routes for both roles */}
-                        <NavLink 
-                            href="/dashboard/overview" 
-                            title="Overview"
-                            icon={<Home size={18} />}
-                        />
                         
                         {/* Pharmacy-specific routes */}
                         {isPharmacy && (

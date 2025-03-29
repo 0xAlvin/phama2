@@ -1,0 +1,864 @@
+/* Orders Page styles */
+.ordersPage {
+  padding: 0.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.pageTitle {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: var(--text-color, #333);
+}
+
+.ordersContainer {
+  background-color: var(--background-color, white);
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-top: 1.5rem;
+  overflow: hidden;
+}
+
+/* Header styles */
+.ordersHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-color, #e9e9e9);
+}
+
+.searchContainer {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-grow: 1;
+  max-width: 700px;
+}
+
+.searchInputWrapper {
+  position: relative;
+  flex-grow: 1;
+}
+
+.searchInputWrapper svg {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-color-secondary, #666);
+}
+
+.searchInput {
+  width: 100%;
+  padding: 0.5rem 1rem 0.5rem 2.25rem;
+  border: 1px solid var(--border-color, #e9e9e9);
+  border-radius: 2rem;
+  font-size: 0.875rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--primary-color, #2C8B80);
+  box-shadow: 0 0 0 2px rgba(44, 139, 128, 0.2);
+}
+
+.filterContainer {
+  position: relative;
+  min-width: 180px;
+}
+
+.filterContainer svg {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-color-secondary, #666);
+  pointer-events: none;
+}
+
+.filterSelect {
+  width: 100%;
+  padding: 0.5rem 1rem 0.5rem 2.25rem;
+  border: 1px solid var(--border-color, #e9e9e9);
+  border-radius: 2rem;
+  font-size: 0.875rem;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+  cursor: pointer;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: var(--primary-color, #2C8B80);
+  box-shadow: 0 0 0 2px rgba(44, 139, 128, 0.2);
+}
+
+.addOrderButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--primary-color, #2C8B80);
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.addOrderButton:hover {
+  background-color: var(--primary-dark, #237067);
+  transform: translateY(-2px);
+}
+
+.addOrderButton:active {
+  transform: translateY(0);
+}
+
+/* Table styles */
+.tableContainer {
+  overflow-x: auto;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-top: 1.5rem;
+}
+
+.ordersTable {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.ordersTable thead tr {
+  background-color: var(--background-secondary, #f8f9fa);
+  border-bottom: 1px solid var(--border-color, #e9e9e9);
+}
+
+.ordersTable th,
+.ordersTable td {
+  padding: 12px 15px;
+}
+
+.ordersTable th {
+  background-color: #f5f5f5;
+  color: #333;
+  font-weight: 600;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.ordersTable tbody tr {
+  border-bottom: 1px solid var(--border-color, #e9e9e9);
+  transition: background-color 0.2s;
+}
+
+.ordersTable tr {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.ordersTable tr:last-child {
+  border-bottom: none;
+}
+
+.ordersTable tbody tr:hover {
+  background-color: var(--background-hover, #f5f5f5);
+}
+
+.ordersTable tr:hover {
+  background-color: #f9fafb;
+}
+
+.ordersTable tbody tr:last-child {
+  border-bottom: none;
+}
+
+.ordersTable td {
+  padding: 1rem;
+  font-size: 0.875rem;
+  color: var(--text-color, #333);
+  vertical-align: middle;
+}
+
+.orderId {
+  font-family: monospace;
+  font-weight: 500;
+}
+
+.orderId a {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.orderId a:hover {
+  text-decoration: underline;
+}
+
+.patientName {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.patientName, .pharmacyName {
+  font-weight: 500;
+}
+
+.prescriptionIcon {
+  display: inline-flex;
+  color: var(--primary-color, #2C8B80);
+}
+
+.amount {
+  font-weight: 600;
+}
+
+/* Status badge styles */
+.statusBadge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 2rem;
+  text-align: center;
+}
+
+.status {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.statusPending {
+  background-color: rgba(255, 170, 0, 0.15);
+  color: rgb(255, 170, 0);
+}
+
+.statusPending {
+  background-color: #fff7ed;
+  color: #c2410c;
+}
+
+.statusProcessing {
+  background-color: rgba(79, 70, 229, 0.15);
+  color: rgb(79, 70, 229);
+}
+
+.statusProcessing {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+}
+
+.statusShipped {
+  background-color: rgba(6, 182, 212, 0.15);
+  color: rgb(6, 182, 212);
+}
+
+.statusShipped {
+  background-color: #f0f9ff;
+  color: #0369a1;
+}
+
+.statusDelivered {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: rgb(16, 185, 129);
+}
+
+.statusDelivered, .statusCompleted {
+  background-color: #ecfdf5;
+  color: #047857;
+}
+
+.statusCancelled {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: rgb(239, 68, 68);
+}
+
+.statusCancelled {
+  background-color: #fef2f2;
+  color: #b91c1c;
+}
+
+/* Action menu styles */
+.actionsCell {
+  text-align: right;
+}
+
+.actionMenuContainer {
+  position: relative;
+  display: inline-block;
+}
+
+.actionMenuButton {
+  background: none;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-color-secondary, #666);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.actionMenuButton:hover {
+  background-color: var(--background-secondary, #f8f9fa);
+}
+
+.menuOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+}
+
+.actionMenu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 0.5rem;
+  z-index: 20;
+  background-color: white;
+  border-radius: 0.25rem;
+  min-width: 160px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.menuItem {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  text-align: left;
+  background: none;
+  border: none;
+  font-size: 0.875rem;
+  color: var(--text-color, #333);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.menuItem:hover {
+  background-color: var(--background-secondary, #f8f9fa);
+}
+
+.dangerAction {
+  color: var(--error-color, #ef4444);
+}
+
+.dangerAction:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+/* Stats styles */
+.statsContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.statsContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.statCard {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  background-color: var(--background-color, white);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border-radius: 0.5rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.statCard {
+  background-color: white;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.statCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.statIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 0.5rem;
+  background-color: rgba(44, 139, 128, 0.1);
+  color: var(--primary-color, #2C8B80);
+  margin-right: 0.75rem;
+}
+
+.statIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background-color: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4b5563;
+}
+
+.pendingIcon {
+  background-color: rgba(255, 170, 0, 0.1);
+  color: rgb(255, 170, 0);
+}
+
+.processingIcon {
+  background-color: rgba(79, 70, 229, 0.1);
+  color: rgb(79, 70, 229);
+}
+
+.shippedIcon {
+  background-color: rgba(6, 182, 212, 0.1);
+  color: rgb(6, 182, 212);
+}
+
+.deliveredIcon {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: rgb(16, 185, 129);
+}
+
+.revenueIcon {
+  background-color: rgba(45, 212, 191, 0.1);
+  color: rgb(45, 212, 191);
+}
+
+.statContent {
+  display: flex;
+  flex-direction: column;
+}
+
+.statInfo h3 {
+  font-size: 0.875rem;
+  color: #4b5563;
+  margin: 0 0 4px;
+}
+
+.statInfo p {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.statValue {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.statLabel {
+  font-size: 0.75rem;
+  color: var(--text-color-secondary, #666);
+  margin: 0;
+}
+
+.revenueCard {
+  grid-column: span 2;
+}
+
+.currencySymbol {
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+/* Empty state styles */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--text-color-secondary, #666);
+}
+
+.emptyState {
+  padding: 48px;
+  text-align: center;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  border: 1px dashed #d1d5db;
+}
+
+.emptyState p {
+  color: #6b7280;
+  margin-bottom: 16px;
+}
+
+.createOrderBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background-color: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.createOrderBtn:hover {
+  background-color: #059669;
+}
+
+/* Loading styles */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  text-align: center;
+}
+
+.loadingContainer {
+  padding: 48px;
+  text-align: center;
+  background-color: #f9fafb;
+  border-radius: 8px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid rgba(44, 139, 128, 0.2);
+  border-top-color: var(--primary-color, #2C8B80);
+  animation: spin 1s infinite linear;
+  margin-bottom: 1rem;
+}
+
+.spinner {
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-left-color: #10b981;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Error styles */
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  text-align: center;
+}
+
+.errorContainer {
+  padding: 32px;
+  text-align: center;
+  background-color: #fef2f2;
+  border-radius: 8px;
+  border: 1px solid #fee2e2;
+}
+
+.errorMessage {
+  margin-bottom: 1rem;
+  color: var(--error-color, #ef4444);
+}
+
+.errorMessage {
+  color: #b91c1c;
+  margin-bottom: 16px;
+}
+
+.retryButton {
+  padding: 0.5rem 1rem;
+  background-color: var(--primary-color, #2C8B80);
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.retryButton:hover {
+  background-color: var(--primary-dark, #237067);
+}
+
+.retryButton {
+  padding: 8px 16px;
+  background-color: #2C8B80; /* Primary color */
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.retryButton:hover {
+  background-color: #237067; /* Primary dark */
+  transform: translateY(-1px);
+}
+
+/* Pagination styles */
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border-color, #e9e9e9);
+}
+
+.paginationInfo {
+  font-size: 0.875rem;
+  color: var(--text-color-secondary, #666);
+}
+
+.paginationInfo span {
+  font-weight: 600;
+  color: var(--text-color, #333);
+}
+
+.paginationControls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.paginationButton {
+  padding: 0.25rem 0.75rem;
+  background-color: var(--background-secondary, #f8f9fa);
+  border: 1px solid var(--border-color, #e9e9e9);
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.paginationButton:hover:not(:disabled) {
+  background-color: var(--primary-color, #2C8B80);
+  border-color: var(--primary-color, #2C8B80);
+  color: white;
+}
+
+.paginationButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .ordersHeader {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .searchContainer {
+    max-width: 100%;
+    flex-direction: column;
+  }
+
+  .ordersTable th,
+  .ordersTable td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .statsContainer {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .pagination {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .statsContainer {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Action buttons styles */
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.viewButton {
+  text-decoration: none;
+}
+
+.button {
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  background-color: #f3f4f6;
+  color: #4b5563;
+  border-color: #d1d5db;
+}
+
+.button:hover {
+  background-color: #e5e7eb;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.completeButton {
+  background-color: #2C8B80; /* Primary color */
+  color: white;
+  border-color: #237067; /* Primary dark */
+}
+
+.completeButton:hover {
+  background-color: #237067; /* Primary dark */
+}
+
+.processButton {
+  background-color: #4F46E5; /* Secondary indigo */
+  color: white;
+  border-color: #4338CA;
+}
+
+.processButton:hover {
+  background-color: #4338CA;
+}
+
+.cancelButton {
+  background-color: #EF4444; /* Error red */
+  color: white;
+  border-color: #DC2626;
+}
+
+.cancelButton:hover {
+  background-color: #DC2626;
+}
+
+.loadingButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 0.875rem;
+  background-color: #f3f4f6;
+  color: #4b5563;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
+}
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  border-left-color: #4b5563;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Add styles for create order button */
+.addOrderButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #2C8B80; /* Primary color */
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+.addOrderButton:hover {
+  background-color: #237067; /* Primary dark */
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+.addOrderButton:active {
+  transform: translateY(0);
+}
+
+.createOrderBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background-color: #2C8B80; /* Primary color */
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+.createOrderBtn:hover {
+  background-color: #237067; /* Primary dark */
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.retryButton {
+  padding: 8px 16px;
+  background-color: #2C8B80; /* Primary color */
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.retryButton:hover {
+  background-color: #237067; /* Primary dark */
+  transform: translateY(-1px);
+}

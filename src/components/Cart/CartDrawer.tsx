@@ -60,7 +60,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                   
                   <div className={styles.itemContent}>
                     <h3 className={styles.itemName}>{item.name}</h3>
-                    <p className={styles.itemPrice}>${item.price.toFixed(2)}</p>
+                    <p className={styles.itemPrice}>Kes {item.price.toFixed(2)}</p>
                     
                     <div className={styles.quantityControls}>
                       <button 

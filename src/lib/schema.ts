@@ -107,6 +107,19 @@ export const inventory = pgTable("inventory", {
     batchNumber: varchar("batch_number", { length: 100 }),
     expiryDate: date("expiry_date"),
     price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+    imageUrl: varchar("image_url", { length: 500 }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+// Adding doctors table for reference selection in prescriptions
+export const doctors = pgTable("doctors", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: varchar("name", { length: 255 }).notNull(),
+    specialization: varchar("specialization", { length: 100 }),
+    licenseNumber: varchar("license_number", { length: 100 }).notNull().unique(),
+    contact: varchar("contact", { length: 100 }),
+    email: varchar("email", { length: 255 }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
@@ -115,12 +128,14 @@ export const inventory = pgTable("inventory", {
 export const prescriptions = pgTable("prescriptions", {
     id: uuid("id").primaryKey().defaultRandom(),
     patientId: uuid("patient_id").references(() => patients.id).notNull(),
+    doctorId: uuid("doctor_id").references(() => doctors.id),
     doctorName: varchar("doctor_name", { length: 255 }).notNull(),
     doctorContact: varchar("doctor_contact", { length: 100 }),
     issueDate: date("issue_date").notNull(),
     expiryDate: date("expiry_date"),
     status: varchar("status", { length: 50 }).notNull().default("active"),
     notes: text("notes"),
+    imageUrl: varchar("image_url", { length: 500 }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
@@ -274,10 +289,18 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
     payment: many(payments),
 }));
 
+export const doctorsRelations = relations(doctors, ({ many }) => ({
+    prescriptions: many(prescriptions),
+}));
+
 export const prescriptionsRelations = relations(prescriptions, ({ one, many }) => ({
     patient: one(patients, {
         fields: [prescriptions.patientId],
         references: [patients.id],
+    }),
+    doctor: one(doctors, {
+        fields: [prescriptions.doctorId],
+        references: [doctors.id],
     }),
     items: many(prescriptionItems),
 }));
