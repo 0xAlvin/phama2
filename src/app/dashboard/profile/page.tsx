@@ -16,22 +16,22 @@ const ProfilePage = () => {
             <div className={styles.profileForm}>
               <div className={styles.formGroup}>
                 <label htmlFor="name">Full Name</label>
-                <input type="text" id="name" defaultValue="John Doe" className={styles.formInput} />
+                <input type="text" id="name" defaultValue="Wanjiku Kamau" className={styles.formInput} />
               </div>
               
               <div className={styles.formGroup}>
                 <label htmlFor="email">Email Address</label>
-                <input type="email" id="email" defaultValue="john.doe@example.com" className={styles.formInput} />
+                <input type="email" id="email" defaultValue="wanjiku.kamau@gmail.com" className={styles.formInput} />
               </div>
               
               <div className={styles.formGroup}>
                 <label htmlFor="phone">Phone Number</label>
-                <input type="tel" id="phone" defaultValue="+1 (555) 123-4567" className={styles.formInput} />
+                <input type="tel" id="phone" defaultValue="+254 712 345 678" className={styles.formInput} />
               </div>
               
               <div className={styles.formGroup}>
                 <label htmlFor="location">Location</label>
-                <input type="text" id="location" defaultValue="New York, NY" className={styles.formInput} />
+                <input type="text" id="location" defaultValue="Nairobi, Kenya" className={styles.formInput} />
               </div>
               
               <button className={styles.saveButton}>Save Changes</button>

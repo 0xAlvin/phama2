@@ -32,33 +32,40 @@ export default function SignInForm({ onSignIn }: SignInFormProps) {
     
     try {
       if (onSignIn) {
-        // Use the parent component's sign-in function if provided
+        console.log('🔍 SignInForm - Using parent onSignIn function');
         const result = await onSignIn(email, password, remember);
+        
         if (!result.success) {
           setError(result.error || 'An error occurred');
+          setIsSubmitting(false);
         }
       } else {
-        // Use NextAuth's signIn directly to avoid CSRF issues
-        const result = await signIn('credentials', {
-          redirect: false,
+        console.log('🔍 SignInForm - Using direct NextAuth signIn');
+        
+        // FOR DEBUGGING: Make a test call to the debug API to check session status before auth
+        try {
+          const debugResponse = await fetch('/api/debug/sessions');
+          const debugData = await debugResponse.json();
+          console.log('Pre-auth debug data:', debugData);
+        } catch (e) {
+          console.error('Error fetching debug data:', e);
+        }
+        
+        // Use full page navigation to ensure cookies are properly set
+        await signIn('credentials', {
+          redirect: true,  // Force the native redirection
+          callbackUrl: '/dashboard',
           email,
           password,
           remember: remember.toString(),
-          callbackUrl
         });
-
-        if (result?.error) {
-          setError('Invalid email or password');
-        } else if (result?.url) {
-          router.push(result.url);
-        } else {
-          router.push('/dashboard');
-        }
+        
+        // This shouldn't execute due to page navigation
+        console.log('This should not log - page should have redirected');
       }
     } catch (err) {
-      console.error('Form submission error:', err);
+      console.error('🔍 SignInForm - Form submission error:', err);
       setError('An unexpected error occurred');
-    } finally {
       setIsSubmitting(false);
     }
   };

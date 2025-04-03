@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { orders, orderItems, payments } from '@/lib/schema';
+import { orders, orderItems, payments, patients } from '@/lib/schema';
 import { auth } from '@/lib/auth';
+import { eq } from 'drizzle-orm';
+import { v4 as uuidv4 } from 'uuid';
 import Stripe from 'stripe';
 
 // Initialize Stripe with your secret key
@@ -12,54 +14,118 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 export async function POST(request: Request) {
   try {
     // Authenticate the request
-    const authSession = await auth();
-    if (!authSession || !authSession.user) {
+    const session = await auth();
+    if (!session || !session.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user from session
-    const userId = authSession.user.id;
+    // Get user ID from session - only rely on guaranteed fields
+    const userId = session.user.id;
     
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
-    }
-    
-    // Parse request body
-    const { items, totalAmount } = await request.json();
-    
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return NextResponse.json({ error: 'Invalid items' }, { status: 400 });
+    // Log relevant session data for debugging
+    console.log(`Processing Stripe payment for user ID: ${userId}`);
+
+    const body = await request.json();
+    const { items, totalAmount, pharmacyId, prescriptionId } = body;
+
+    // Validate required fields
+    if (!Array.isArray(items) || items.length === 0) {
+      return NextResponse.json({ error: 'Order items are required' }, { status: 400 });
     }
 
-    // Get patient info
-    const patient = await db.query.patients.findFirst({
-      where: (patients, { eq }) => eq(patients.userId, userId)
+    if (!pharmacyId) {
+      return NextResponse.json({ error: 'Pharmacy ID is required' }, { status: 400 });
+    }
+
+    if (!totalAmount || isNaN(Number(totalAmount)) || Number(totalAmount) <= 0) {
+      return NextResponse.json({ error: 'Valid total amount is required' }, { status: 400 });
+    }
+
+    // Get the patient ID from the user ID
+    let patient = await db.query.patients.findFirst({
+      where: eq(patients.userId, userId)
     });
+
+    // If patient profile doesn't exist, create one
+    if (!patient) {
+      console.log(`No patient profile found for user ${userId}. Creating one now.`);
+      
+      try {
+        // Use email to derive patient name (simpler approach)
+        const email = session.user?.email || 'unknown@example.com';
+        const emailName = email.split('@')[0];
+        
+        // Convert email name to proper case and replace dots/underscores with spaces
+        const formattedName = emailName
+          .replace(/[._]/g, ' ')
+          .replace(/\b\w/g, letter => letter.toUpperCase());
+        
+        // Split into first and last name if possible
+        const nameParts = formattedName.split(' ');
+        const firstName = nameParts[0] || 'New';
+        const lastName = nameParts.length > 1 ? nameParts[1] : 'Patient';
+        
+        console.log(`Creating patient with name: ${firstName} ${lastName}`);
+        
+        // Create patient record
+        const patientId = uuidv4();
+        try {
+          [patient] = await db.insert(patients).values({
+            id: patientId,
+            userId: userId,
+            firstName: firstName,
+            lastName: lastName,
+            dateOfBirth: new Date('2000-01-01'), // Default date
+            phone: '0000000000', // Default phone
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }).returning();
+          
+          console.log(`Created new patient profile with ID: ${patient.id}`);
+        } catch (dbError) {
+          console.error('Database error creating patient:', dbError);
+          
+          // Log more details about the insert operation
+          console.log('Insert operation details:', JSON.stringify({
+            table: 'patients',
+            values: {
+              id: patientId,
+              userId,
+              firstName,
+              lastName
+            }
+          }));
+          
+          return NextResponse.json({ 
+            error: 'Failed to create patient profile in database',
+            details: dbError instanceof Error ? dbError.message : 'Unknown database error'
+          }, { status: 500 });
+        }
+      } catch (error) {
+        console.error('Error creating patient profile:', error);
+        return NextResponse.json({ 
+          error: 'Failed to create patient profile. Please complete your profile before making a payment.',
+          details: error instanceof Error ? error.message : undefined
+        }, { status: 500 });
+      }
+    }
 
     if (!patient) {
-      return NextResponse.json({ error: 'Patient not found' }, { status: 404 });
+      return NextResponse.json({ 
+        error: 'Could not find or create patient profile' 
+      }, { status: 404 });
     }
 
-    // Get pharmacy info (using first item's pharmacy for now)
-    // In a real app, you'd likely want to group by pharmacy
-    const firstMedicationId = items[0].medicationId;
-    const inventoryItem = await db.query.inventory.findFirst({
-      where: (inventory, { eq }) => eq(inventory.medicationId, firstMedicationId)
-    });
-
-    if (!inventoryItem) {
-      return NextResponse.json({ error: 'Medication not found in inventory' }, { status: 404 });
-    }
-
-    // Create order record
+    // Create the order record with explicit values for all required fields
     const [orderResult] = await db.insert(orders).values({
       patientId: patient.id,
-      pharmacyId: inventoryItem.pharmacyId,
+      pharmacyId: pharmacyId,
       totalAmount: totalAmount,
       status: 'pending',
+      prescriptionId: prescriptionId || null
     }).returning();
 
-    // Add order items
+    // Insert all order items
     const orderItemsToInsert = items.map(item => ({
       orderId: orderResult.id,
       medicationId: item.medicationId,

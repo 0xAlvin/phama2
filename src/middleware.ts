@@ -1,21 +1,5 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-
-// Temporarily disable all middleware logic to test component rendering
-export function middleware(request: NextRequest) {
-  // Just pass through all requests without any logic
-  console.log(`[Middleware DISABLED] Request to: ${request.nextUrl.pathname}`);
-  return NextResponse.next();
-}
-
-// Only include essential routes
-export const config = {
-  matcher: ['/dashboard/:path*']
-};
-
-/* TEMPORARILY DISABLED MIDDLEWARE CODE:
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
 // Helper function to debug middleware execution with timestamp
@@ -27,7 +11,7 @@ const debugMiddleware = (message: string, details?: any) => {
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   
-  // More comprehensive exclusion list
+  // Skip middleware for API routes and static files
   if (
     pathname.startsWith('/api/') || 
     pathname.includes('/_next') || 
@@ -37,63 +21,121 @@ export async function middleware(request: NextRequest) {
     pathname === '/favicon.ico' ||
     pathname.match(/\.(ico|png|jpg|jpeg|svg|css|js|json|woff|woff2|ttf)$/)
   ) {
-    // Skip middleware for static resources
+    return NextResponse.next();
+  }
+
+  // Skip auth-test to avoid interference
+  if (pathname === '/auth-test') {
     return NextResponse.next();
   }
 
   debugMiddleware(`Processing request for: ${pathname}`);
   
-  // Attempt to get the session token with error handling
   try {
-    const session = await getToken({ 
-      req: request, 
-      secret: process.env.NEXTAUTH_SECRET 
-    });
-    
-    // Only check specific paths exactly - don't use startsWith for auth pages
-    // This avoids accidentally matching paths like /signin-custom
-    const isAuthPage = 
-      pathname === '/signin' || 
-      pathname === '/signup' || 
-      pathname === '/forgot-password' || 
-      pathname === '/reset-password';
-
-    debugMiddleware(`Auth status: ${session ? 'Authenticated' : 'Not authenticated'}, Page: ${pathname}, isAuthPage: ${isAuthPage}`);
-
-    // For authenticated users accessing auth pages or home
-    if (session && (isAuthPage || pathname === '/')) {
-      debugMiddleware(`Redirecting authenticated user from ${pathname} to /dashboard`);
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+    // Only check dashboard protection
+    if (pathname.startsWith('/dashboard')) {
+      // Get all cookies for debugging
+      const cookies = request.cookies.getAll();
+      debugMiddleware(`Cookies found:`, cookies.map(c => `${c.name}=${c.value.substring(0, 8)}...`));
+      
+      // Get the AUTH_SECRET from environment variables
+      const secret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET;
+      
+      if (!secret) {
+        debugMiddleware("WARNING: No NEXTAUTH_SECRET found in environment!");
+        return NextResponse.redirect(new URL('/signin', request.url));
+      }
+      
+      // Get token with all critical settings explicitly set
+      // Try authjs.session-token format first
+      let session = await getToken({
+        req: request,
+        secret,
+        secureCookie: process.env.NODE_ENV === "production", 
+        cookieName: "authjs.session-token",
+        raw: true // Important for capturing the raw JWT
+      }).catch(err => {
+        debugMiddleware(`Error getting token from authjs.session-token: ${err.message}`);
+        return null;
+      });
+      
+      // If no session with authjs format, try next-auth format
+      if (!session) {
+        session = await getToken({
+          req: request,
+          secret,
+          secureCookie: process.env.NODE_ENV === "production",
+          cookieName: "next-auth.session-token",
+          raw: true // Important for capturing the raw JWT
+        }).catch(err => {
+          debugMiddleware(`Error getting token from next-auth.session-token: ${err.message}`);
+          return null;
+        });
+        
+        if (session) {
+          debugMiddleware("Found valid session with next-auth.session-token");
+        }
+      } else {
+        debugMiddleware("Found valid session with authjs.session-token");
+      }
+      
+      debugMiddleware(`Session authentication result: ${!!session}`);
+      
+      // If we still don't have a valid token, try manually decoding to see what's wrong
+      if (!session) {
+        const authJsToken = request.cookies.get('authjs.session-token')?.value;
+        const nextAuthToken = request.cookies.get('next-auth.session-token')?.value;
+        
+        debugMiddleware('Raw token values available:', {
+          'authjs.session-token': authJsToken ? 'present' : 'absent',
+          'next-auth.session-token': nextAuthToken ? 'present' : 'absent',
+        });
+        
+        try {
+          // Load a JWT debugging utility
+          const { decode } = require('next-auth/jwt');
+          
+          // Try to decode without verification just to see if the token structure is valid
+          if (authJsToken) {
+            const decoded = decode({ 
+              token: authJsToken, 
+              secret,
+            });
+            debugMiddleware('Raw authjs token decode attempt:', { success: !!decoded });
+          }
+          
+          if (nextAuthToken) {
+            const decoded = decode({ 
+              token: nextAuthToken, 
+              secret,
+            });
+            debugMiddleware('Raw next-auth token decode attempt:', { success: !!decoded });
+          }
+        } catch (decodeErr) {
+          debugMiddleware(`Error during manual token decode: ${decodeErr.message}`);
+        }
+        
+        debugMiddleware("No valid session found, redirecting to signin");
+        return NextResponse.redirect(new URL('/signin', request.url));
+      }
+      
+      debugMiddleware("Valid session found, allowing access to dashboard");
     }
-
-    // Only for dashboard paths specifically
-    if (!session && pathname === '/dashboard' || pathname.startsWith('/dashboard/')) {
-      debugMiddleware(`Redirecting unauthenticated user from ${pathname} to /signin`);
-      const callbackUrl = encodeURIComponent(pathname);
-      return NextResponse.redirect(new URL(`/signin?callbackUrl=${callbackUrl}`, request.url));
-    }
     
-    // For all other paths, allow access regardless of auth status
-    debugMiddleware(`Allowing access to ${pathname}`);
+    // For all other routes, allow the request
     return NextResponse.next();
   } catch (error) {
     console.error('[Middleware Error]', error);
-    // In case of error, let the request through to avoid breaking the app
+    // In case of error, redirect to signin
+    if (pathname.startsWith('/dashboard')) {
+      return NextResponse.redirect(new URL('/signin', request.url));
+    }
     return NextResponse.next();
   }
 }
 
-// Make matcher more specific to avoid capturing CSS/JS files
+// Very focused matcher to only protect dashboard
 export const config = {
-  matcher: [
-    // Only match specific paths we want to protect or handle
-    '/',
-    '/dashboard',
-    '/dashboard/:path*',
-    '/signin',
-    '/signup',
-    '/forgot-password',
-    '/reset-password'
-  ],
+  matcher: ['/dashboard', '/dashboard/:path*', '/auth-test']
 };
-*/
+

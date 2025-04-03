@@ -90,95 +90,101 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders, isPharmacy = false, i
     return (
         <>
             <div className={styles.tableContainer}>
-                <table className={styles.ordersTable}>
-                    <thead>
-                        <tr>
-                            <th>Order ID</th>
-                            {isPharmacy && <th>Patient</th>}
-                            {isPatient && <th>Pharmacy</th>}
-                            <th>Amount</th>
-                            <th>Status</th>
-                            <th>Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {orders.map((order) => (
-                            <tr key={order.id}>
-                                <td className={styles.orderId}>
-                                    <span onClick={() => handleViewOrder(order.id)} style={{ cursor: 'pointer', color: '#2563eb' }}>
-                                        {order.id.substring(0, 8)}...
-                                    </span>
-                                </td>
-                                
-                                {isPharmacy && (
-                                    <td className={styles.patientName}>{order.patientName}</td>
-                                )}
-                                
-                                {isPatient && (
-                                    <td className={styles.pharmacyName}>{order.pharmacyName}</td>
-                                )}
-                                
-                                <td className={styles.amount}>
-                                    KES {order.totalAmount.toFixed(2)}
-                                </td>
-                                
-                                <td>
-                                    <span className={`${styles.status} ${getStatusClass(order.status)}`}>
-                                        {order.status}
-                                    </span>
-                                </td>
-                                
-                                <td className={styles.date}>
-                                    {order.formattedDate || formatDate(order.createdAt)}
-                                </td>
-                                
-                                <td className={styles.actions}>
-                                    <button 
-                                        className={styles.button}
-                                        onClick={() => handleViewOrder(order.id)}
-                                    >
-                                        View
-                                    </button>
-                                    
-                                    {isPharmacy && order.isCompletable && !processingOrders[order.id] && (
-                                        <button 
-                                            className={`${styles.button} ${styles.completeButton}`}
-                                            onClick={() => handleUpdateStatus(order.id, 'completed')}
-                                        >
-                                            Complete
-                                        </button>
-                                    )}
-                                    
-                                    {isPharmacy && order.status.toLowerCase() === 'pending' && !processingOrders[order.id] && (
-                                        <button 
-                                            className={`${styles.button} ${styles.processButton}`}
-                                            onClick={() => handleUpdateStatus(order.id, 'processing')}
-                                        >
-                                            Process
-                                        </button>
-                                    )}
-                                    
-                                    {isPatient && order.isCancelable && !processingOrders[order.id] && (
-                                        <button 
-                                            className={`${styles.button} ${styles.cancelButton}`}
-                                            onClick={() => handleUpdateStatus(order.id, 'cancelled')}
-                                        >
-                                            Cancel
-                                        </button>
-                                    )}
-                                    
-                                    {processingOrders[order.id] && (
-                                        <div className={styles.loadingButton}>
-                                            <div className={styles.spinner}></div>
-                                            Processing...
-                                        </div>
-                                    )}
-                                </td>
+                {orders.length === 0 ? (
+                    <div className={styles.emptyState}>
+                        <p>No orders found</p>
+                    </div>
+                ) : (
+                    <table className={styles.ordersTable}>
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                {isPharmacy && <th>Patient</th>}
+                                {isPatient && <th>Pharmacy</th>}
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Actions</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {orders.map((order) => (
+                                <tr key={order.id}>
+                                    <td className={styles.orderId}>
+                                        <span onClick={() => handleViewOrder(order.id)} style={{ cursor: 'pointer', color: '#2563eb' }}>
+                                            {order.id.substring(0, 8)}...
+                                        </span>
+                                    </td>
+                                    
+                                    {isPharmacy && (
+                                        <td className={styles.patientName}>{order.patientName}</td>
+                                    )}
+                                    
+                                    {isPatient && (
+                                        <td className={styles.pharmacyName}>{order.pharmacyName}</td>
+                                    )}
+                                    
+                                    <td className={styles.amount}>
+                                        KES {order.totalAmount.toFixed(2)}
+                                    </td>
+                                    
+                                    <td>
+                                        <span className={`${styles.status} ${getStatusClass(order.status)}`}>
+                                            {order.status}
+                                        </span>
+                                    </td>
+                                    
+                                    <td className={styles.date}>
+                                        {order.formattedDate || formatDate(order.createdAt)}
+                                    </td>
+                                    
+                                    <td className={styles.actions}>
+                                        <button 
+                                            className={styles.button}
+                                            onClick={() => handleViewOrder(order.id)}
+                                        >
+                                            View
+                                        </button>
+                                        
+                                        {isPharmacy && order.isCompletable && !processingOrders[order.id] && (
+                                            <button 
+                                                className={`${styles.button} ${styles.completeButton}`}
+                                                onClick={() => handleUpdateStatus(order.id, 'completed')}
+                                            >
+                                                Complete
+                                            </button>
+                                        )}
+                                        
+                                        {isPharmacy && order.status.toLowerCase() === 'pending' && !processingOrders[order.id] && (
+                                            <button 
+                                                className={`${styles.button} ${styles.processButton}`}
+                                                onClick={() => handleUpdateStatus(order.id, 'processing')}
+                                            >
+                                                Process
+                                            </button>
+                                        )}
+                                        
+                                        {isPatient && order.isCancelable && !processingOrders[order.id] && (
+                                            <button 
+                                                className={`${styles.button} ${styles.cancelButton}`}
+                                                onClick={() => handleUpdateStatus(order.id, 'cancelled')}
+                                            >
+                                                Cancel
+                                            </button>
+                                        )}
+                                        
+                                        {processingOrders[order.id] && (
+                                            <div className={styles.loadingButton}>
+                                                <div className={styles.spinner}></div>
+                                                Processing...
+                                            </div>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                )}
             </div>
             
             {/* Order details modal */}

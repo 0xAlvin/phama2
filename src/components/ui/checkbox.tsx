@@ -3,46 +3,50 @@
 import * as React from "react"
 import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
+import "./checkbox.css"
 
 interface CheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
   checked?: boolean
+  defaultChecked?: boolean
   onCheckedChange?: (checked: boolean) => void
 }
 
 const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
-  ({ className, checked, onCheckedChange, ...props }, ref) => {
-    const [isChecked, setIsChecked] = React.useState(checked || false)
-    
+  ({ className, checked, defaultChecked, onCheckedChange, ...props }, ref) => {
+    const [isChecked, setIsChecked] = React.useState<boolean>(
+      checked !== undefined ? checked : defaultChecked || false
+    )
+
     React.useEffect(() => {
       if (checked !== undefined) {
         setIsChecked(checked)
       }
     }, [checked])
-    
+
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
       const newChecked = event.target.checked
       setIsChecked(newChecked)
       onCheckedChange?.(newChecked)
     }
-    
+
     return (
-      <div className="relative flex items-center">
+      <div className="checkbox-container">
         <input
           type="checkbox"
           ref={ref}
           checked={isChecked}
           onChange={handleChange}
-          className="sr-only"
+          className="checkbox-input"
           {...props}
         />
         <div
           className={cn(
-            "h-4 w-4 shrink-0 rounded-sm border border-blue-600 flex items-center justify-center",
-            isChecked ? "bg-blue-600" : "bg-white",
+            "checkbox",
+            isChecked && "checkbox-checked",
             className
           )}
         >
-          {isChecked && <Check className="h-3 w-3 text-white" />}
+          <Check className="checkbox-indicator" />
         </div>
       </div>
     )

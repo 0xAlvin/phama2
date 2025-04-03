@@ -20,78 +20,119 @@ const ALLOWED_UPLOADS = {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("Processing image upload request");
+
     // Check authentication using the auth() function
-    type UserType = { staffRole?: keyof typeof PharmacyStaffRoles } & { role?: keyof typeof UserRoles };
-    const session = await auth() as { user: UserType };
-    
+    const session = await auth();
+
     if (!session || !session.user) {
+      console.log("Unauthorized: No session or user found");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    
-    // Get user role from session
-    const userRole = session.user.role || UserRoles.PATIENT;
+
+    // Get user role from session - handle type properly
+    const userRole = session.user.role as keyof typeof UserRoles || UserRoles.PATIENT;
     // Get pharmacy staff role if available
-    const staffRole = session.user.staffRole as typeof PharmacyStaffRoles[keyof typeof PharmacyStaffRoles] | undefined;
+    const staffRole = session.user.staffRole as keyof typeof PharmacyStaffRoles | undefined;
+
+    console.log(`User authenticated - Role: ${userRole}, StaffRole: ${staffRole || 'none'}`);
+
+    // Parse the request as FormData or JSON depending on content type
+    let image, purpose, folder;
+
+    const contentType = request.headers.get('content-type') || '';
     
-    // Parse the request as JSON
-    const { image, purpose, folder } = await request.json();
-    
+    if (contentType.includes('multipart/form-data')) {
+      // Handle form data upload
+      const formData = await request.formData();
+      const file = formData.get('file') as File;
+      
+      if (!file) {
+        return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+      }
+      
+      // Convert file to base64
+      const buffer = await file.arrayBuffer();
+      const base64 = Buffer.from(buffer).toString('base64');
+      const mimeType = file.type;
+      image = `data:${mimeType};base64,${base64}`;
+      
+      purpose = formData.get('purpose') as string || 'general';
+      folder = formData.get('folder') as string;
+    } else {
+      // Handle JSON upload with base64 image data
+      const data = await request.json();
+      image = data.image;
+      purpose = data.purpose;
+      folder = data.folder;
+    }
+
     // Validate required fields
     if (!image) {
+      console.log("Bad Request: Image data is required");
       return NextResponse.json({ error: "Image data is required" }, { status: 400 });
     }
-    
+
     if (!purpose || !ALLOWED_UPLOADS[purpose as keyof typeof ALLOWED_UPLOADS]) {
+      console.log(`Bad Request: Invalid upload purpose: ${purpose}`);
       return NextResponse.json({ error: "Valid upload purpose is required" }, { status: 400 });
     }
-    
+
     // Check if user has permission for this upload type
-    const allowedRoles = ALLOWED_UPLOADS[purpose as keyof typeof ALLOWED_UPLOADS] as Array<typeof UserRoles[keyof typeof UserRoles] | typeof PharmacyStaffRoles[keyof typeof PharmacyStaffRoles]>;
-    
+    const allowedRoles = ALLOWED_UPLOADS[purpose as keyof typeof ALLOWED_UPLOADS];
+
     // Check primary role or staff role if available
-    const hasPermission = allowedRoles.includes(userRole as typeof UserRoles[keyof typeof UserRoles]) || 
-      (staffRole && allowedRoles.includes(staffRole));
-    
+    const hasPermission = (
+      allowedRoles.includes(userRole as unknown as any) || 
+      (staffRole && allowedRoles.includes(staffRole as unknown as any))
+    );
+
     if (!hasPermission) {
-      return NextResponse.json({ 
-        error: `Your role doesn't have permission for ${purpose} uploads` 
+      console.log(`Forbidden: User role ${userRole} or staff role ${staffRole} does not have permission for ${purpose} uploads`);
+      return NextResponse.json({
+        error: `Your role doesn't have permission for ${purpose} uploads`
       }, { status: 403 });
     }
-    
+
     // Determine the appropriate folder
     const uploadFolder = folder || `phamapp/${purpose}`;
-    
-    // Add relevant tags based on role
-    const tags = [purpose];
-    if (userRole) tags.push(userRole);
-    if (staffRole) tags.push(staffRole);
-    
+
+    console.log(`Uploading image to folder: ${uploadFolder}`);
+
     // Process the base64 or URL image using imageService
-    const uploadResult = await imageService.uploadImage(
-      image,
-      uploadFolder,
-      tags
-    );
-    
-    // Return success response with image info
-    return NextResponse.json({
-      message: "Image uploaded successfully",
-      image: uploadResult
-    }, { status: 200 });
-    
+    try {
+      const uploadResult = await imageService.uploadImage(
+        image,
+        uploadFolder
+      );
+
+      console.log("Image uploaded successfully");
+
+      // Return success response with image info
+      return NextResponse.json({
+        success: true,
+        message: "Image uploaded successfully",
+        fileUrl: uploadResult.publicUrl,
+        image: uploadResult
+      }, { status: 200 });
+    } catch (supabaseError: any) {
+      console.error("Supabase upload error:", supabaseError);
+      return NextResponse.json({
+        success: false,
+        error: supabaseError.message || "Failed to upload image to storage"
+      }, { status: 500 });
+    }
+
   } catch (error: any) {
     console.error("Image upload error:", error);
-    return NextResponse.json({ 
-      error: error.message || "Failed to upload image" 
+    return NextResponse.json({
+      success: false,
+      error: error.message || "Failed to process upload request"
     }, { status: 500 });
   }
 }
 
-// Config for API routes
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '10mb',
-    },
-  },
-};
+// Use Next.js Edge Runtime for this API route
+export const runtime = 'edge';
+
+// Configure the bodyParser size limit in next.config.js instead

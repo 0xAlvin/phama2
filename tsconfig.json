@@ -35,7 +35,7 @@
     "**/*.tsx",
     "next-env.d.ts",
     ".next/types/**/*.ts"
-  ],
+, "src/components/MpesaPayment.js"  ],
   "exclude": [
     "node_modules"
   ]

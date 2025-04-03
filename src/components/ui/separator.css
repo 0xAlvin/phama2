@@ -1,0 +1,20 @@
+.separator {
+  background-color: var(--border);
+}
+
+.separator-horizontal {
+  height: 1px;
+  width: 100%;
+  margin: 1rem 0;
+}
+
+.separator-vertical {
+  height: 100%;
+  width: 1px;
+  margin: 0 1rem;
+}
+
+.my-6 {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}

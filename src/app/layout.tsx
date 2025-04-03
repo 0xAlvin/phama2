@@ -6,7 +6,7 @@ import NextAuthSessionProvider from "@/lib/providers/SessionProvider";
 import LayoutTest from './layout-test';
 import { CartProvider } from '@/contexts/CartContext';
 import { Toaster } from "@/components/ui/toaster";
-import { ToastProvider } from "@/components/ui/toast";
+import { ToastProviderWrapper } from "@/components/ToastProviderWrapper";
 
 // Using widely available Google Fonts since @vercel/font-geist isn't available
 const inter = Inter({
@@ -32,17 +32,17 @@ export default function RootLayout({
   // The root layout should not have the RouteGuard
   // We'll apply it selectively to protected routes instead
   return (
-    <html lang="en">
-      <NextAuthSessionProvider>
-        <ToastProvider>
-          <body className={`${inter.variable} ${robotoMono.variable}`}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${inter.variable} ${robotoMono.variable}`}>
+        <ToastProviderWrapper>
+          <NextAuthSessionProvider>
             <CartProvider>
               {children}
             </CartProvider>
             <Toaster />
-          </body>
-        </ToastProvider>
-      </NextAuthSessionProvider>
+          </NextAuthSessionProvider>
+        </ToastProviderWrapper>
+      </body>
     </html>
   );
 }

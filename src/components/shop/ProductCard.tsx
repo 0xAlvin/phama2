@@ -36,33 +36,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   };
 
   const getProductImageSrc = () => {
-    // First check if we already have an error
-    if (imageError) {
-      return '/images/placeholder.png';
+    if (imageError || !product.imageUrl) {
+      // Change the fallback path to an image that already exists in your project
+      return '/images/placeholdercontainer.jpg'; // Update this to use an image that exists in your public directory
     }
-    
-    // First check for inventory_image
-    if (product.imageUrl && typeof product.imageUrl === 'string' && product.imageUrl.trim() !== '') {
-      return product.imageUrl;
-    }
-    
-    // Then check for imageUrl 
-    if (product.imageUrl && typeof product.imageUrl === 'string' && product.imageUrl.trim() !== '') {
-      return product.imageUrl;
-    }
-    
-    // Check for image property
-    if (product.imageUrl && typeof product.imageUrl=== 'string' && product.imageUrl.trim() !== '') {
-      return product.imageUrl;
-    }
-    
-    // Try product-specific path
-    if (product.id) {
-      return `/images/inventory/${product.id}.jpg`;
-    }
-    
-    // Default fallback
-    return '/images/placeholder-medicine.jpg';
+    return product.imageUrl;
   };
 
   return (
@@ -73,10 +51,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             src={getProductImageSrc()}
             alt={product.name}
             fill
-            sizes="120px"
-            className={styles.image}
-            priority={true}
-            quality={80}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            style={{ objectFit: 'cover' }}
             onError={() => setImageError(true)}
           />
           {product.prescription && (

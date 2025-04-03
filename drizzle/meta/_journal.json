@@ -8,6 +8,13 @@
       "when": 1743226880443,
       "tag": "0000_lame_valeria_richards",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1743580168450,
+      "tag": "0001_puzzling_miss_america",
+      "breakpoints": true
     }
   ]
 }

@@ -6,7 +6,7 @@
 .upload-container {
   border: 2px dashed var(--border);
   border-radius: 8px;
-  padding: 1.5rem;
+  padding: 0.2rem;
   background-color: var(--background);
   transition: all 0.2s ease;
 }
@@ -21,7 +21,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 0.5rem;
   cursor: pointer;
 }
 
@@ -68,11 +68,11 @@
 }
 
 .medication-card {
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  background-color: var(--accent);
+  border-radius: 0.5rem;
   padding: 1.25rem;
-  margin-bottom: 1rem;
-  transition: box-shadow 0.2s ease;
+  margin-top: 1rem;
+  border: 1px solid var(--border);
 }
 
 .medication-card:hover {
@@ -87,9 +87,8 @@
 }
 
 .medication-title {
-  font-size: 1.1rem;
   font-weight: 500;
-  color: var(--foreground);
+  margin: 0;
 }
 
 .error-text {
@@ -100,13 +99,19 @@
 
 .form-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 2rem;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 1.5rem;
 }
 
 @media (min-width: 768px) {
   .form-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1.5fr;
+  }
+}
+
+@media (max-width: 1024px) {
+  .form-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -123,14 +128,14 @@
 }
 
 .form-row {
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .form-label {
   display: block;
-  font-size: 0.875rem;
+  font-size: 1rem;
   font-weight: 500;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.625rem;
 }
 
 .form-input, .form-textarea {
@@ -153,9 +158,9 @@
 }
 
 .form-actions {
+  margin-top: 2rem;
   display: flex;
   justify-content: flex-end;
-  margin-top: 2rem;
 }
 
 .checkbox-container {
@@ -185,9 +190,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 0.75rem;
+  padding: 1rem;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 0.5rem;
   background-color: var(--input);
   color: var(--foreground);
   text-align: left;
@@ -206,26 +211,345 @@
   z-index: 50;
   background-color: var(--background);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 0.5rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .submit-button {
-  padding: 0.75rem 1.5rem;
   background-color: var(--primary);
-  color: white;
+  color: var(--primary-foreground);
+  padding: 1rem 2rem;
   border: none;
-  border-radius: 4px;
-  font-weight: 500;
+  border-radius: 0.5rem;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  /* Add box-shadow for a modern look */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-width: 180px;
+}
+
+.submit-button:hover {
+  background-color: var(--primary-hover);
+  /* Slightly increase the shadow on hover */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.submit-button:disabled {
+  opacity: 0.7; /* Slightly reduce opacity when disabled */
+  cursor: not-allowed;
+}
+
+.prescription-form-container {
+  max-width: 100%;
+  overflow-x: hidden;
+  padding: 1.5rem;
+}
+
+.prescription-form-title {
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
+  color: var(--foreground);
+}
+
+.form-section {
+  background-color: var(--background);
+  border-radius: 0.75rem;
+  padding: 2rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--foreground);
+}
+
+.input-field,
+.select-field,
+.textarea-field {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background-color: var(--input);
+  color: var(--foreground);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input-field:focus,
+.select-field:focus,
+.textarea-field:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary);
+}
+
+.select-field {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background-color: var(--input);
+  color: var(--foreground);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  /* Add a more subtle box-shadow */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  /* Ensure consistent height */
+  height: auto;
+}
+
+.select-field:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary);
+}
+
+/* Style for the SelectTrigger (the visible part of the select) */
+.select-trigger {
+  /* Inherit styles from input-field */
+  width: 100%;
+  padding: 1rem;
+  font-size: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background-color: var(--input);
+  color: var(--foreground);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  text-align: left; /* Align text to the left */
+  appearance: none; /* Remove default arrow */
+  -webkit-appearance: none; /* Remove default arrow */
+  -moz-appearance: none; /* Remove default arrow */
+}
+
+.select-trigger:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary);
+}
+
+/* Style for the SelectContent (the dropdown) */
+.select-content {
+  background-color: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden; /* Hide overflow */
+}
+
+/* Style for the SelectItem (each option) */
+.select-item {
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  color: var(--foreground);
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
-.submit-button:hover {
-  background-color: var(--primary-dark);
+.select-item:hover {
+  background-color: var(--accent);
 }
 
-.submit-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.select-field:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary);
+}
+
+.checkbox-field {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+.form-section-title {
+  display: flex;
+  align-items: center;
+  font-size: 1.25rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+  color: var(--foreground);
+}
+
+.section-icon {
+  margin-right: 0.5rem;
+  color: var(--primary);
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.medication-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.col-span-2 {
+  grid-column: span 2;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+  margin: 2rem auto;
+  max-width: 500px;
+}
+
+.empty-icon {
+  color: var(--muted-foreground);
+  margin-bottom: 1rem;
+}
+
+.new-prescription-form {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.form-section {
+  margin-bottom: 1.5rem;
+}
+
+.section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.add-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+  .form-grid,
+  .form-grid-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.medication-form-item {
+  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background-color: var(--background);
+}
+
+.medication-form-item:last-child {
+  margin-bottom: 0;
+}
+
+.medication-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.medication-header h4 {
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.remove-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--destructive);
+}
+
+.upload-section {
+  margin-top: 1rem;
+}
+
+.upload-section label {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.text-muted-foreground {
+  color: var(--muted-foreground);
+}
+
+.text-xs {
+  font-size: 0.75rem;
+}
+
+.mt-2 {
+  margin-top: 0.5rem;
+}
+
+.form-item {
+  margin-bottom: 1rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.5;
+  margin-bottom: 0.25rem;
+}
+
+.form-message {
+  font-size: 0.875rem;
+  color: var(--destructive);
+  margin-top: 0.25rem;
+}
+
+.ml-2 {
+  margin-left: 0.5rem;
+}
+
+.mt-4 {
+  margin-top: 1rem;
+}
+
+.cursor-pointer {
+  cursor: pointer;
 }

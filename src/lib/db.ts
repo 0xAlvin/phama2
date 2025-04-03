@@ -1,11 +1,16 @@
-// /home/oden/dev/phama2/lib/utils/db.ts
+import 'dotenv/config'
 
-import { drizzle } from "drizzle-orm/neon-http";
-import { neon } from "@neondatabase/serverless";
-import * as schema from "@/lib/schema";
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
+import * as schema from '@/lib/schema';
 
-// Get database url from environment
-console.log("Connecting to database:", process.env.DATABASE_URL!);
-// Create drizzle instance with schema
-export const db =  drizzle(neon(process.env.DATABASE_URL!||"postgres://neondb_owner:npg_CFDIU52QXKxh@ep-curly-hall-a5so94ep-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require"), { schema });
+const connectionString = process.env.DATABASE_URL!;
 
+// Add this conditional import check
+if (typeof window !== 'undefined') {
+  throw new Error('This module should only be imported on the server-side');
+}
+
+// Disable prefetch as it is not supported for "Transaction" pool mode
+export const client = postgres(connectionString, { prepare: false })
+export const db = drizzle(client, { schema, logger: true });

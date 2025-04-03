@@ -1,189 +1,424 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useToast } from "@/components/ui/use-toast";
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { CalendarIcon, Plus, Trash2, Upload } from 'lucide-react';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
-import PharmacySelector from './PharmacySelector';
-import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/components/ui/use-toast';
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { 
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
+} from '@/components/ui/form';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { 
+  FilePlus, 
+  Plus, 
+  Trash2, 
+  Calendar as CalendarIcon 
+} from 'lucide-react';
+// Use conditional imports to prevent build errors
+let zodResolver: any;
+let useForm: any;
+let useFieldArray: any;
+let z: any;
 
-interface Medication {
-  name: string;
-  dosage: string;
-  frequency: string;
-  duration: string;
-  quantity?: number;
-  instructions: string;
+if (typeof window !== 'undefined') {
+  // Only load these modules on the client side
+  import('react-hook-form').then((module) => {
+    useForm = module.useForm;
+    useFieldArray = module.useFieldArray;
+  });
+  
+  import('zod').then((module) => {
+    z = module.default;
+  });
+  
+  import('@hookform/resolvers/zod').then((module) => {
+    zodResolver = module.zodResolver;
+  });
 }
 
-interface PrescriptionFormData {
-  doctorName: string;
-  doctorContact: string;
-  issueDate: Date | undefined;
-  expiryDate: Date | undefined;
-  medications: Medication[];
-  notes: string;
-  pharmacyId: string;
-  sendToPharmacy: boolean;
+import { Separator } from '@/components/ui/separator';
+import SimpleDateInput from './SimpleDateInput';
+import ModernImageUpload from './ModernImageUpload';
+
+import './NewPrescriptionForm.css';
+
+// Define interfaces and types
+interface Pharmacy {
+  id: string;
+  name: string;
+}
+
+// Helper function to format dates properly for the API
+const formatDateForAPI = (date: Date | null): string | undefined => {
+  if (!date) return undefined;
+  
+  try {
+    // Check if it's a valid date object
+    if (!(date instanceof Date) || isNaN(date.getTime())) {
+      console.warn("Invalid date object:", date);
+      return undefined;
+    }
+    
+    // Format as YYYY-MM-DD
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  } catch (error) {
+    console.error("Error formatting date for API:", error);
+    return undefined;
+  }
+};
+
+// Instead, define API fetch functions directly in this component:
+async function fetchPharmacies() {
+  try {
+    const response = await fetch('/api/pharmacies', {
+      method: 'GET',
+    });
+    
+    if (!response.ok) {
+      console.error(`Failed to fetch pharmacies: ${response.status} ${response.statusText}`);
+      // Return mock data as fallback
+      return [
+        { id: '1', name: 'Downtown Pharmacy' },
+        { id: '2', name: 'Community Pharmacy' },
+        { id: '3', name: 'City Health Pharmacy' }
+      ];
+    }
+    
+    const data = await response.json();
+    return data.pharmacies || [];
+  } catch (error) {
+    console.error('Error fetching pharmacies:', error);
+    // Return mock data as fallback
+    return [
+      { id: '1', name: 'Downtown Pharmacy' },
+      { id: '2', name: 'Community Pharmacy' },
+      { id: '3', name: 'City Health Pharmacy' }
+    ];
+  }
+}
+
+async function submitPrescription(formData: any, image: File | null) {
+  try {
+    let imageUrl: string | undefined = undefined;
+    
+    // Upload image if provided
+    if (image) {
+      const formData = new FormData();
+      formData.append('file', image);
+      const uploadResponse = await fetch('/api/prescriptions/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!uploadResponse.ok) {
+        const error = await uploadResponse.json();
+        throw new Error(error.error || 'Failed to upload image');
+      }
+      
+      const uploadResult = await uploadResponse.json();
+      imageUrl = uploadResult.fileUrl;
+    }
+    
+    // Create the request payload with the image URL
+    const payload = {
+      ...formData,
+      imageUrl
+    };
+    
+    console.log("Sending payload to API:", JSON.stringify(payload, null, 2));
+    
+    const response = await fetch('/api/prescriptions/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+    
+    const result = await response.json();
+    
+    if (!response.ok) {
+      console.error('Server error response:', result);
+      throw new Error(result.error || result.details || 'Failed to create prescription');
+    }
+    
+    return { success: true, id: result.id };
+  } catch (error) {
+    console.error('Error creating prescription:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error occurred while creating prescription' 
+    };
+  }
 }
 
 export default function NewPrescriptionForm() {
   const { toast } = useToast();
+  const router = useRouter();
+  const { data: session } = useSession();
   const [prescriptionImage, setPrescriptionImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // Form state
-  const [formData, setFormData] = useState<PrescriptionFormData>({
+  const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
+  const [loadingPharmacies, setLoadingPharmacies] = useState(false);
+  const [formState, setFormState] = useState({
     doctorName: '',
     doctorContact: '',
-    issueDate: undefined,
-    expiryDate: undefined,
-    medications: [{ name: '', dosage: '', frequency: '', duration: '', instructions: '' }],
+    issueDate: new Date(),
+    expiryDate: null as Date | null,
+    medications: [{ 
+      name: '', 
+      dosage: '', 
+      frequency: '', 
+      duration: '', 
+      quantity: 1, 
+      instructions: '' 
+    }],
     notes: '',
+    sendToPharmacy: false,
     pharmacyId: '',
-    sendToPharmacy: false
+    status: 'active'
   });
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setPrescriptionImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
+  // For debugging
+  useEffect(() => {
+    console.log("Form state updated:", { 
+      sendToPharmacy: formState.sendToPharmacy, 
+      pharmacyId: formState.pharmacyId 
+    });
+  }, [formState.sendToPharmacy, formState.pharmacyId]);
+
+  // Fetch pharmacies
+  useEffect(() => {
+    const loadPharmacies = async () => {
+      setLoadingPharmacies(true);
+      try {
+        const data = await fetchPharmacies();
+        setPharmacies(data);
+      } catch (error) {
+        console.error('Error loading pharmacies:', error);
+        // Use fallback data
+        setPharmacies([
+          { id: '1', name: 'Downtown Pharmacy' },
+          { id: '2', name: 'Community Pharmacy' },
+          { id: '3', name: 'City Health Pharmacy' }
+        ]);
+        toast({
+          title: "Couldn't load pharmacies",
+          description: "Using default pharmacy list instead",
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingPharmacies(false);
+      }
+    };
+
+    loadPharmacies();
+  }, []);
+
+  // Handle image upload
+  const handleImageUpload = (file: File) => {
+    setPrescriptionImage(file);
+    const imageUrl = URL.createObjectURL(file);
+    setImagePreview(imageUrl);
   };
 
-  const removeImage = () => {
-    setPrescriptionImage(null);
-    setImagePreview(null);
-  };
-
-  const addMedication = () => {
-    setFormData({
-      ...formData,
+  // Add another medication
+  const handleAddMedication = () => {
+    setFormState(prev => ({
+      ...prev,
       medications: [
-        ...formData.medications,
-        { name: '', dosage: '', frequency: '', duration: '', instructions: '' }
+        ...prev.medications,
+        { name: '', dosage: '', frequency: '', duration: '', quantity: 1, instructions: '' }
       ]
+    }));
+  };
+
+  // Remove a medication
+  const handleRemoveMedication = (index: number) => {
+    setFormState(prev => ({
+      ...prev,
+      medications: prev.medications.filter((_, i) => i !== index)
+    }));
+  };
+
+  // Handle form input changes
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormState(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Handle medication field changes
+  const handleMedicationChange = (index: number, field: string, value: string | number) => {
+    setFormState(prev => {
+      const updatedMedications = [...prev.medications];
+      updatedMedications[index] = {
+        ...updatedMedications[index],
+        [field]: value
+      };
+      return {
+        ...prev,
+        medications: updatedMedications
+      };
     });
   };
 
-  const removeMedication = (index: number) => {
-    if (formData.medications.length > 1) {
-      const updatedMedications = [...formData.medications];
-      updatedMedications.splice(index, 1);
-      setFormData({
-        ...formData,
-        medications: updatedMedications
-      });
-    }
+  // Handle checkbox change
+  const handleCheckboxChange = (checked: boolean) => {
+    setFormState(prev => ({
+      ...prev,
+      sendToPharmacy: checked,
+      // If unchecking, reset the pharmacyId
+      pharmacyId: checked ? prev.pharmacyId : ''
+    }));
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
+  // Handle select change
+  const handleSelectChange = (name: string, value: string) => {
+    console.log(`Setting ${name} to:`, value);
+    // Directly update state without using previous state to avoid any closure issues
+    setFormState({
+      ...formState,
       [name]: value
     });
   };
 
-  const handleMedicationChange = (index: number, field: keyof Medication, value: string | number) => {
-    const updatedMedications = [...formData.medications];
-    updatedMedications[index] = {
-      ...updatedMedications[index],
-      [field]: value
-    };
-    
-    setFormData({
-      ...formData,
-      medications: updatedMedications
-    });
+  // Handle date change
+  const handleDateChange = (field: 'issueDate' | 'expiryDate', date: Date | null) => {
+    setFormState(prev => ({
+      ...prev,
+      [field]: date
+    }));
   };
 
+  // Form submission handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Add console log for debugging
+    console.log("Form submission - form state:", formState);
     
-    // Validate form
-    const newErrors: Record<string, string> = {};
-    
-    if (!formData.doctorName) {
-      newErrors.doctorName = 'Doctor name is required';
+    // Validate required fields
+    if (!formState.doctorName.trim()) {
+      toast({
+        title: "Missing information",
+        description: "Doctor name is required",
+        variant: "destructive",
+      });
+      return;
     }
-    
-    if (!formData.issueDate) {
-      newErrors.issueDate = 'Issue date is required';
+
+    if (formState.medications.length === 0) {
+      toast({
+        title: "Missing information",
+        description: "At least one medication is required",
+        variant: "destructive",
+      });
+      return;
     }
-    
-    formData.medications.forEach((medication, index) => {
-      if (!medication.name) {
-        newErrors[`medication-${index}-name`] = 'Medication name is required';
+
+    // Validate each medication
+    for (const med of formState.medications) {
+      if (!med.name.trim() || !med.dosage.trim() || !med.frequency.trim()) {
+        toast({
+          title: "Missing information",
+          description: "Medication name, dosage, and frequency are required for all medications",
+          variant: "destructive",
+        });
+        return;
       }
-      if (!medication.dosage) {
-        newErrors[`medication-${index}-dosage`] = 'Dosage is required';
-      }
-      if (!medication.frequency) {
-        newErrors[`medication-${index}-frequency`] = 'Frequency is required';
-      }
-    });
-    
-    if (formData.sendToPharmacy && !formData.pharmacyId) {
-      newErrors.pharmacyId = 'Please select a pharmacy';
     }
-    
-    setErrors(newErrors);
-    
-    if (Object.keys(newErrors).length > 0) {
+
+    if (formState.sendToPharmacy && !formState.pharmacyId) {
+      toast({
+        title: "Missing information",
+        description: "Please select a pharmacy",
+        variant: "destructive",
+      });
       return;
     }
     
-    setLoading(true);
-
     try {
-      // In a real app, submit the form data and image to your API
-      console.log('Form data:', formData);
-      console.log('Prescription image:', prescriptionImage);
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      toast({
-        title: "Prescription submitted",
-        description: formData.sendToPharmacy 
-          ? "Your prescription has been sent to the pharmacy"
-          : "Your prescription has been saved",
-      });
-
-      // Reset form
-      setFormData({
-        doctorName: '',
-        doctorContact: '',
-        issueDate: undefined,
-        expiryDate: undefined,
-        medications: [{ name: '', dosage: '', frequency: '', duration: '', instructions: '' }],
-        notes: '',
-        pharmacyId: '',
-        sendToPharmacy: false
-      });
-      setPrescriptionImage(null);
-      setImagePreview(null);
-    } catch (error) {
+      setLoading(true);
+      
+      // Get the patient ID from the session
+      if (!session?.user?.id) {
+        throw new Error('Authentication required to create prescriptions');
+      }
+      
+      const patientId = session.user.id;
+      
+      // Format dates properly and ensure they're strings, not Date objects
+      const issueDate = formatDateForAPI(formState.issueDate) || new Date().toISOString().split('T')[0];
+      const expiryDate = formatDateForAPI(formState.expiryDate);
+      
+      console.log("Formatted dates for API:", { issueDate, expiryDate });
+      
+      // Format data for API making sure all properties are serializable
+      const prescriptionData = {
+        patientId,
+        doctorName: formState.doctorName.trim(),
+        doctorContact: formState.doctorContact?.trim() || undefined,
+        issueDate,
+        expiryDate,
+        status: formState.status || 'active',
+        medications: formState.medications.map(med => ({
+          name: med.name.trim(),
+          dosage: med.dosage.trim(),
+          frequency: med.frequency.trim(),
+          duration: med.duration?.trim() || undefined,
+          quantity: Number(med.quantity) || 1,
+          instructions: med.instructions?.trim() || undefined,
+        })),
+        notes: formState.notes?.trim() || undefined,
+        pharmaciesId: formState.sendToPharmacy ? formState.pharmacyId : undefined,
+      };
+      
+      // Stringify the data *before* logging it, to ensure we see what's actually being sent
+      const serializedData = JSON.stringify(prescriptionData);
+      console.log("Sending data to API:", serializedData);
+      
+      // Use submitPrescription instead of createPrescription
+      const result = await submitPrescription(JSON.parse(serializedData), prescriptionImage); // Parse it back to an object
+      
+      if (result.success) {
+        toast({
+          title: "Prescription submitted",
+          description: formState.sendToPharmacy
+            ? "Your prescription has been sent to the pharmacy"
+            : "Your prescription has been saved",
+        });
+        
+        // Redirect to prescriptions list
+        router.push('/dashboard/prescriptions?tab=my-prescriptions');
+      } else {
+        throw new Error(result.error || 'Failed to create prescription');
+      }
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "There was a problem submitting your prescription",
+        description: error.message || "There was a problem submitting your prescription",
         variant: "destructive",
       });
       console.error('Error submitting prescription:', error);
@@ -192,319 +427,258 @@ export default function NewPrescriptionForm() {
     }
   };
 
+  // Validation for form submission
+  const isFormValid = () => {
+    // Check doctor name
+    if (!formState.doctorName.trim()) return false;
+    
+    // Check medications
+    if (!formState.medications.length) return false;
+    
+    for (const med of formState.medications) {
+      if (!med.name.trim() || !med.dosage.trim() || !med.frequency.trim()) {
+        return false;
+      }
+    }
+    
+    // Check pharmacy if sending to pharmacy
+    if (formState.sendToPharmacy && !formState.pharmacyId) {
+      return false;
+    }
+    
+    return true;
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
-      <div className="space-y-6">
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="space-y-6">
-            <Card className="p-4 border-dashed border-2">
-              <div className="text-center space-y-4">
-                <h3 className="font-medium">Upload Prescription Image</h3>
-                <p className="text-sm text-muted-foreground">
-                  Upload a clear photo or scan of your prescription
-                </p>
-
-                {!imagePreview ? (
-                  <div className="flex items-center justify-center">
-                    <label htmlFor="prescription-image" className="cursor-pointer">
-                      <div className="border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center">
-                        <Upload className="h-10 w-10 text-muted-foreground mb-2" />
-                        <span className="text-sm font-medium">Click to upload</span>
-                        <span className="text-xs text-muted-foreground mt-1">PNG, JPG or PDF</span>
-                      </div>
-                      <input
-                        id="prescription-image"
-                        type="file"
-                        accept="image/png, image/jpeg, application/pdf"
-                        className="hidden"
-                        onChange={handleImageChange}
-                      />
-                    </label>
-                  </div>
-                ) : (
-                  <div className="relative">
-                    <img
-                      src={imagePreview}
-                      alt="Prescription preview"
-                      className="max-h-60 mx-auto rounded-lg"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2"
-                      onClick={removeImage}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </Card>
-
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="doctorName">Doctor Name</Label>
-                <Input 
-                  id="doctorName"
-                  name="doctorName"
-                  placeholder="Dr. John Smith"
-                  value={formData.doctorName}
-                  onChange={handleChange}
-                  className={errors.doctorName ? 'border-destructive' : ''}
-                />
-                {errors.doctorName && (
-                  <p className="text-sm text-destructive">{errors.doctorName}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="doctorContact">Doctor Contact (Optional)</Label>
-                <Input 
-                  id="doctorContact"
-                  name="doctorContact"
-                  placeholder="Phone or email"
-                  value={formData.doctorContact}
-                  onChange={handleChange}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Issue Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-full pl-3 text-left font-normal",
-                          !formData.issueDate && "text-muted-foreground",
-                          errors.issueDate && "border-destructive"
-                        )}
-                      >
-                        {formData.issueDate ? (
-                          format(formData.issueDate, "PPP")
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={formData.issueDate}
-                        onSelect={(date) => setFormData({ ...formData, issueDate: date })}
-                        disabled={(date) =>
-                          date > new Date() || date < new Date("1900-01-01")
-                        }
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  {errors.issueDate && (
-                    <p className="text-sm text-destructive">{errors.issueDate}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Expiry Date (Optional)</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-full pl-3 text-left font-normal",
-                          !formData.expiryDate && "text-muted-foreground"
-                        )}
-                      >
-                        {formData.expiryDate ? (
-                          format(formData.expiryDate, "PPP")
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={formData.expiryDate}
-                        onSelect={(date) => setFormData({ ...formData, expiryDate: date })}
-                        disabled={(date) =>
-                          date < new Date() || date < new Date("1900-01-01")
-                        }
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
+    <div className="new-prescription-form">
+      <form onSubmit={handleSubmit}>
+        <div className="form-section">
+          <h3 className="section-title">Doctor Information</h3>
+          <div className="form-grid">
+            <div className="form-item">
+              <label className="form-label">Doctor's Name*</label>
+              <Input 
+                name="doctorName"
+                placeholder="Enter doctor's name"
+                value={formState.doctorName}
+                onChange={handleChange}
+                required
+              />
             </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium">Medications</h3>
-              <Button 
-                type="button" 
-                variant="outline" 
-                size="sm" 
-                onClick={addMedication}
-                className="flex items-center gap-1"
-              >
-                <Plus className="h-4 w-4" /> Add Medication
-              </Button>
-            </div>
-
-            {formData.medications.map((medication, index) => (
-              <Card key={index} className="p-4">
-                <div className="flex justify-between items-center mb-3">
-                  <h4 className="font-medium">Medication #{index + 1}</h4>
-                  {index > 0 && (
-                    <Button 
-                      type="button" 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => removeMedication(index)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  )}
-                </div>
-                <div className="space-y-3">
-                  <div className="space-y-2">
-                    <Label>Medication Name</Label>
-                    <Input 
-                      placeholder="e.g., Amoxicillin"
-                      value={medication.name}
-                      onChange={(e) => handleMedicationChange(index, 'name', e.target.value)}
-                      className={errors[`medication-${index}-name`] ? 'border-destructive' : ''}
-                    />
-                    {errors[`medication-${index}-name`] && (
-                      <p className="text-sm text-destructive">{errors[`medication-${index}-name`]}</p>
-                    )}
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label>Dosage</Label>
-                      <Input 
-                        placeholder="e.g., 500mg"
-                        value={medication.dosage}
-                        onChange={(e) => handleMedicationChange(index, 'dosage', e.target.value)}
-                        className={errors[`medication-${index}-dosage`] ? 'border-destructive' : ''}
-                      />
-                      {errors[`medication-${index}-dosage`] && (
-                        <p className="text-sm text-destructive">{errors[`medication-${index}-dosage`]}</p>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label>Frequency</Label>
-                      <Input 
-                        placeholder="e.g., 3 times daily"
-                        value={medication.frequency}
-                        onChange={(e) => handleMedicationChange(index, 'frequency', e.target.value)}
-                        className={errors[`medication-${index}-frequency`] ? 'border-destructive' : ''}
-                      />
-                      {errors[`medication-${index}-frequency`] && (
-                        <p className="text-sm text-destructive">{errors[`medication-${index}-frequency`]}</p>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label>Duration (Optional)</Label>
-                      <Input 
-                        placeholder="e.g., 7 days"
-                        value={medication.duration}
-                        onChange={(e) => handleMedicationChange(index, 'duration', e.target.value)}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label>Quantity (Optional)</Label>
-                      <Input 
-                        type="number" 
-                        placeholder="e.g., 21"
-                        value={medication.quantity || ''}
-                        onChange={(e) => handleMedicationChange(index, 'quantity', e.target.valueAsNumber || 0)}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Special Instructions (Optional)</Label>
-                    <Textarea 
-                      placeholder="e.g., Take with food, avoid alcohol" 
-                      className="resize-none"
-                      value={medication.instructions}
-                      onChange={(e) => handleMedicationChange(index, 'instructions', e.target.value)}
-                    />
-                  </div>
-                </div>
-              </Card>
-            ))}
-
-            <div className="space-y-2">
-              <Label htmlFor="notes">Additional Notes (Optional)</Label>
-              <Textarea 
-                id="notes"
-                name="notes"
-                placeholder="Any additional information for the pharmacy" 
-                className="resize-none h-20"
-                value={formData.notes}
+            
+            <div className="form-item">
+              <label className="form-label">Doctor's Contact</label>
+              <Input 
+                name="doctorContact"
+                placeholder="Phone or email (optional)"
+                value={formState.doctorContact}
                 onChange={handleChange}
               />
             </div>
           </div>
         </div>
 
-        <Separator />
+        <Separator className="my-6" />
+        
+        <div className="form-section">
+          <div className="section-header">
+            <h3 className="section-title">Medications*</h3>
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="sm" 
+              onClick={handleAddMedication}
+              className="add-button"
+            >
+              <Plus size={16} />
+              Add Medication
+            </Button>
+          </div>
+          
+          {formState.medications.map((medication, index) => (
+            <div key={index} className="medication-form-item">
+              <div className="medication-header">
+                <h4>Medication #{index + 1}</h4>
+                {index > 0 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveMedication(index)}
+                    className="remove-button"
+                  >
+                    <Trash2 size={16} />
+                    Remove
+                  </Button>
+                )}
+              </div>
 
-        <div className="space-y-4">
-          <div className="flex items-start space-x-3 space-y-0">
-            <Checkbox
-              id="sendToPharmacy"
-              checked={formData.sendToPharmacy}
-              onCheckedChange={(checked) => setFormData({ ...formData, sendToPharmacy: !!checked })}
+              <div className="form-grid">
+                <div className="form-item">
+                  <label className="form-label">Medication Name*</label>
+                  <Input 
+                    placeholder="Enter medication name"
+                    value={medication.name}
+                    onChange={(e) => handleMedicationChange(index, 'name', e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-grid-3">
+                <div className="form-item">
+                  <label className="form-label">Dosage*</label>
+                  <Input 
+                    placeholder="e.g. 10mg"
+                    value={medication.dosage}
+                    onChange={(e) => handleMedicationChange(index, 'dosage', e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div className="form-item">
+                  <label className="form-label">Frequency*</label>
+                  <Input 
+                    placeholder="e.g. Twice daily"
+                    value={medication.frequency}
+                    onChange={(e) => handleMedicationChange(index, 'frequency', e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="form-item">
+                  <label className="form-label">Duration</label>
+                  <Input 
+                    placeholder="e.g. 14 days"
+                    value={medication.duration}
+                    onChange={(e) => handleMedicationChange(index, 'duration', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="form-grid-3">
+                <div className="form-item">
+                  <label className="form-label">Quantity</label>
+                  <Input 
+                    type="number"
+                    min="1"
+                    placeholder="Number of units"
+                    value={medication.quantity}
+                    onChange={(e) => handleMedicationChange(index, 'quantity', parseInt(e.target.value) || 1)}
+                  />
+                </div>
+                
+                <div className="form-item">
+                  <label className="form-label">Instructions</label>
+                  <Textarea 
+                    placeholder="Special instructions (optional)"
+                    className="resize-none"
+                    value={medication.instructions}
+                    onChange={(e) => handleMedicationChange(index, 'instructions', e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <Separator className="my-6" />
+
+        <div className="form-section">
+          <h3 className="section-title">Additional Information</h3>
+          <div className="form-grid">
+            <div className="form-item">
+              <label className="form-label">Notes</label>
+              <Textarea 
+                name="notes"
+                placeholder="Additional notes for this prescription"
+                className="resize-none"
+                value={formState.notes}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+
+          <div className="upload-section">
+            <label className="form-label">Prescription Image</label>
+            <ModernImageUpload 
+              onFileSelected={handleImageUpload}
+              previewUrl={imagePreview}
+              accept="image/*"
+              maxSizeMB={5}
             />
-            <div className="space-y-1 leading-none">
-              <Label htmlFor="sendToPharmacy">
-                Send to pharmacy
-              </Label>
+            <div className="text-xs text-muted-foreground mt-2">
+              Upload a photo or scan of your physical prescription (optional)
+            </div>
+          </div>
+        </div>
+
+        <Separator className="my-6" />
+
+        <div className="form-section">
+          <h3 className="section-title">Pharmacy Options</h3>
+          <div className="checkbox-container">
+            <Checkbox 
+              checked={formState.sendToPharmacy}
+              onCheckedChange={handleCheckboxChange}
+              id="sendToPharmacy"
+            />
+            <div className="space-y-1 leading-none ml-2">
+              <label htmlFor="sendToPharmacy" className="form-label cursor-pointer">Send to Pharmacy</label>
               <p className="text-sm text-muted-foreground">
-                Send this prescription directly to a pharmacy for fulfillment
+                Send this prescription directly to a pharmacy for filling
               </p>
             </div>
           </div>
 
-          {formData.sendToPharmacy && (
-            <div className="space-y-2">
-              <Label>Select Pharmacy</Label>
-              <PharmacySelector 
-                value={formData.pharmacyId} 
-                onChange={(value) => setFormData({ ...formData, pharmacyId: value })} 
-              />
-              {errors.pharmacyId && (
-                <p className="text-sm text-destructive">{errors.pharmacyId}</p>
+          {formState.sendToPharmacy && (
+            <div className="form-item mt-4">
+              <label className="form-label">Select Pharmacy*</label>
+              {/* Replace Select with a native select for better compatibility */}
+              <select
+                className="w-full p-2 border border-gray-300 rounded-md"
+                value={formState.pharmacyId}
+                onChange={(e) => handleSelectChange('pharmacyId', e.target.value)}
+                disabled={loadingPharmacies}
+              >
+                <option value="">Select a pharmacy</option>
+                {pharmacies.map(pharmacy => (
+                  <option key={pharmacy.id} value={pharmacy.id}>
+                    {pharmacy.name}
+                  </option>
+                ))}
+              </select>
+              {formState.sendToPharmacy && !formState.pharmacyId && (
+                <p className="form-message">Please select a pharmacy</p>
               )}
             </div>
           )}
         </div>
 
-        <div className="flex justify-end">
+        <div className="form-actions">
           <Button 
-            type="submit" 
-            size="lg"
+            type="button" 
+            variant="outline" 
+            onClick={() => router.back()}
             disabled={loading}
           >
-            {loading ? 'Submitting...' : 'Submit Prescription'}
+            Cancel
+          </Button>
+          <Button 
+            type="submit" 
+            disabled={loading || !isFormValid()}
+          >
+            {loading ? (
+              <>Submitting...</>
+            ) : (
+              <>
+                <FilePlus className="w-4 h-4 mr-2" />
+                Save Prescription
+              </>
+            )}
           </Button>
         </div>
-      </div>
-    </form>
+      </form>
+    </div>
   );
 }

@@ -41,10 +41,20 @@ export function useUserRole(): UserRoleData {
                          sessionUser?.profileUrl || 
                          (sessionUser as any)?.profileImage ||
                          null;
+
+    // Add console logging to debug user role detection
+    console.log("User role from session:", role);
+    
+    const isPatient = role === UserRoles.PATIENT;
+    const isPharmacy = role === UserRoles.PHARMACY;
+    const isPharmacyStaff = role === UserRoles.PHARMACY_STAFF;
+    const isAdmin = role === UserRoles.ADMIN;
+
+    console.log("Role detection:", { isPatient, isPharmacy, isPharmacyStaff, isAdmin });
     
     return {
-      isPatient: role === UserRoles.PATIENT,
-      isPharmacy: role === UserRoles.PHARMACY,
+      isPatient,
+      isPharmacy,
       role,
       isAuthenticated,
       isLoading,

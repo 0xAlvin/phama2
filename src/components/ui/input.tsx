@@ -1,5 +1,8 @@
+"use client";
+
 import * as React from "react";
-import '../../styles/components.css';
+import { cn } from "@/lib/utils";
+import "./input.css";
 
 export interface InputProps
   extends React.InputHTMLAttributes<HTMLInputElement> {}
@@ -8,14 +11,14 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, ...props }, ref) => {
     return (
       <input
-        type={type}
-        className={`form-input ${className || ''}`}
+        type={type || "text"}
+        className={cn("input", className)}
         ref={ref}
         {...props}
       />
-    )
+    );
   }
-)
-Input.displayName = "Input"
+);
+Input.displayName = "Input";
 
-export { Input }
+export { Input };

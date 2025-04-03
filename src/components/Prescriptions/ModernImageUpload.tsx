@@ -1,151 +1,133 @@
-'use client';
+"use client";
 
-import React, { useState, useRef } from 'react';
-import { Upload, X, AlertCircle } from 'lucide-react';
-import './ModernImageUpload.css';
+import { useState, useRef } from "react";
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { ImagePlus, X } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import "./ModernImageUpload.css"; // Add this import
 
 interface ModernImageUploadProps {
-  onImageSelect: (file: File) => void;
-  onImageRemove: () => void;
-  imagePreview: string | null;
-  acceptedTypes?: string;
+  onFileSelected: (file: File) => void;
+  previewUrl?: string | null;
+  accept?: string;
   maxSizeMB?: number;
+  className?: string;
 }
 
 export default function ModernImageUpload({
-  onImageSelect,
-  onImageRemove,
-  imagePreview,
-  acceptedTypes = "image/png, image/jpeg, application/pdf",
-  maxSizeMB = 5
+  onFileSelected,
+  previewUrl = null,
+  accept = "image/*",
+  maxSizeMB = 5,
+  className = "",
 }: ModernImageUploadProps) {
+  const { toast } = useToast();
   const [isDragging, setIsDragging] = useState(false);
-  const [fileName, setFileName] = useState<string | null>(null);
-  const [fileSize, setFileSize] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return bytes + ' bytes';
-    else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
-    else return (bytes / 1048576).toFixed(1) + ' MB';
-  };
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    setError(null);
-
-    const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
-      handleFile(files[0]);
-    }
-  };
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setError(null);
-    if (e.target.files && e.target.files.length > 0) {
-      handleFile(e.target.files[0]);
-    }
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    validateAndProcessFile(files[0]);
   };
 
-  const validateFile = (file: File): boolean => {
+  const validateAndProcessFile = (file: File) => {
     // Check file type
-    const fileType = file.type.toLowerCase();
-    const acceptedTypesArray = acceptedTypes.split(',').map(type => type.trim().toLowerCase());
-    
-    if (!acceptedTypesArray.includes(fileType)) {
-      setError(`Invalid file type. Supported formats: ${acceptedTypes}`);
-      return false;
-    }
-    
-    // Check file size
-    if (file.size > maxSizeMB * 1024 * 1024) {
-      setError(`File size exceeds ${maxSizeMB}MB limit.`);
-      return false;
-    }
-    
-    return true;
-  };
-
-  const handleFile = (file: File) => {
-    if (!validateFile(file)) {
+    if (!file.type.startsWith("image/")) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload an image file",
+        variant: "destructive",
+      });
       return;
     }
 
-    setFileName(file.name);
-    setFileSize(formatFileSize(file.size));
-    onImageSelect(file);
+    // Check file size (convert MB to bytes)
+    const maxSizeBytes = maxSizeMB * 1024 * 1024;
+    if (file.size > maxSizeBytes) {
+      toast({
+        title: "File too large",
+        description: `Please upload an image smaller than ${maxSizeMB}MB`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Pass the valid file to the parent component
+    onFileSelected(file);
   };
 
-  const handleUploadClick = () => {
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const files = e.dataTransfer.files;
+    if (!files || files.length === 0) return;
+
+    validateAndProcessFile(files[0]);
+  };
+
+  const handleClearImage = () => {
     if (fileInputRef.current) {
-      fileInputRef.current.click();
+      fileInputRef.current.value = "";
     }
+    onFileSelected(new File([], "")); // Send an empty file to clear
   };
 
   return (
-    <div className="modern-upload-container">
-      {!imagePreview ? (
-        <>
-          <div
-            className={`upload-area ${isDragging ? 'drag-active' : ''}`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onClick={handleUploadClick}
-          >
-            <Upload className="upload-icon" />
-            <h3 className="upload-text">
-              Drag and drop your prescription image or click to browse
-            </h3>
-            <p className="upload-hint">
-              Supports PNG, JPG, PDF up to {maxSizeMB}MB
-            </p>
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="upload-input"
-              accept={acceptedTypes}
-              onChange={handleFileChange}
-            />
-          </div>
-          
-          {error && (
-            <div className="upload-error">
-              <AlertCircle size={16} />
-              <p>{error}</p>
-            </div>
-          )}
-        </>
-      ) : (
+    <div className={`image-upload-container ${className}`}>
+      {previewUrl ? (
         <div className="preview-container">
-          <img src={imagePreview} alt="Prescription preview" className="preview-image" />
-          <div className="preview-overlay"></div>
-          <div className="preview-actions">
-            <button className="action-button remove" onClick={onImageRemove} title="Remove">
-              <X size={20} />
-            </button>
+          <div className="preview-image-container">
+            <Image
+              src={previewUrl}
+              alt="Preview"
+              fill
+              className="preview-image"
+            />
+            <Button
+              type="button"
+              variant="destructive"
+              size="icon"
+              className="clear-button"
+              onClick={handleClearImage}
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </div>
-          {fileName && (
-            <div className="file-info">
-              <div className="file-name">{fileName}</div>
-              {fileSize && <div className="file-size">{fileSize}</div>}
-            </div>
-          )}
+        </div>
+      ) : (
+        <div
+          className={`upload-area ${isDragging ? 'dragging' : ''}`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <ImagePlus className="upload-icon" />
+          <div className="upload-text">
+            <p>Drag & drop an image or click to browse</p>
+            <span>Maximum file size: {maxSizeMB}MB</span>
+          </div>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept={accept}
+            className="file-input"
+          />
         </div>
       )}
     </div>

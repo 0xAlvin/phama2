@@ -9,6 +9,7 @@ interface OrderData {
   }[];
   totalAmount: number;
   phoneNumber?: string;
+  pharmacyId?: string; // Add pharmacyId field
 }
 
 interface PaymentResult {
@@ -16,6 +17,21 @@ interface PaymentResult {
   orderId?: string;
   message?: string;
   transactionId?: string;
+}
+
+interface B2CPaymentData {
+  amount: number;
+  phoneNumber: string;
+  remarks?: string;
+  occasion?: string;
+  referenceId?: string;
+}
+
+interface B2CPaymentResult {
+  success: boolean;
+  message?: string;
+  transactionId?: string;
+  paymentId?: string;
 }
 
 /**
@@ -78,7 +94,11 @@ export async function processMpesaPayment(orderData: OrderData): Promise<Payment
         message: 'Phone number is required for M-Pesa payment',
       };
     }
-
+    console.log('Initiating M-Pesa payment with data:', {
+      ...orderData,
+      phoneNumber: orderData.phoneNumber // Log the phone number for debugging
+    });
+    
     // Call the API to initiate MPesa payment
     const response = await fetch('/api/payments/mpesa', {
       method: 'POST',
@@ -88,42 +108,75 @@ export async function processMpesaPayment(orderData: OrderData): Promise<Payment
       body: JSON.stringify(orderData),
     });
     
-    // In case of network errors or timeouts
+    const data = await response.json();
+    console.log('M-Pesa API response:', data);
+    
     if (!response.ok) {
-      // For demo purposes, simulate a successful payment
-      if (response.status === 500 || response.status === 504) {
-        console.log('Simulating successful payment due to backend issues');
-        return {
-          success: true,
-          orderId: `fallback-order-${Date.now()}`,
-          transactionId: `fallback-txn-${Date.now()}`,
-          message: 'M-Pesa payment initiated. Please check your phone.',
-        };
-      }
-      
-      const errorData = await response.json();
       return {
         success: false,
-        message: errorData.error || 'Failed to process M-Pesa payment',
+        message: data.error || 'Failed to initiate M-Pesa payment',
       };
     }
-
-    const data = await response.json();
+    
+    // Return successful response with M-Pesa transaction details
     return {
       success: true,
       orderId: data.orderId,
       transactionId: data.transactionId,
-      message: data.message || 'M-Pesa payment initiated. Please check your phone.',
+      message: 'M-Pesa payment initiated. Please check your phone to complete the transaction.',
     };
   } catch (error) {
     console.error('M-Pesa payment error:', error);
+    return {
+      success: false,
+      message: 'An error occurred while processing your payment',
+    };
+  }
+}
+
+/**
+ * Process B2C payment (send money to customer)
+ */
+export async function processB2CPayment(paymentData: B2CPaymentData): Promise<B2CPaymentResult> {
+  try {
+    // Basic validation
+    if (!paymentData.phoneNumber || !paymentData.amount) {
+      return {
+        success: false,
+        message: 'Phone number and amount are required for B2C payment',
+      };
+    }
+
+    // Call the API to initiate B2C payment
+    const response = await fetch('/api/payments/mpesa/b2c', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(paymentData),
+    });
     
-    // For demo purposes, proceed with a fallback success path
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.error || 'Failed to initiate B2C payment',
+      };
+    }
+
+    // Return successful response with B2C transaction details
     return {
       success: true,
-      orderId: `fallback-order-${Date.now()}`,
-      transactionId: `fallback-txn-${Date.now()}`,
-      message: 'M-Pesa payment initiated. Please check your phone.',
+      transactionId: data.transactionId,
+      paymentId: data.paymentId,
+      message: data.message || 'B2C payment initiated successfully',
+    };
+  } catch (error) {
+    console.error('B2C payment error:', error);
+    return {
+      success: false,
+      message: 'An error occurred while processing the B2C payment',
     };
   }
 }

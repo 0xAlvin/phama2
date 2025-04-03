@@ -1,3 +1,5 @@
+"use client"
+
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from '@/styles/dashboard/overview.module.css';
@@ -5,16 +7,11 @@ import {
     FaCalendarAlt, FaClipboardList, FaPills, 
     FaNotesMedical, FaUserMd, FaPhoneAlt, FaFilePrescription 
 } from 'react-icons/fa';
-import { Session } from 'next-auth';
-import { getPatientPrescriptions } from '@/services/prescriptionService';
-import { getPatientOrders } from '@/services/orderService';
+import { useSession } from 'next-auth/react';
+import { usePrescriptionStore } from '@/store/prescriptionStore';
 import { getPatientNotifications } from '@/services/notificationService';
-import { useToast } from '@/components/ui/use-toast';
 import LoadingSpinner from '@/components/ui/loading-spinner';
 
-interface PatientDashboardProps {
-    session: Session;
-}
 
 interface Medication {
     id: string;
@@ -55,98 +52,87 @@ interface Notification {
     createdAt: string;
 }
 
-const PatientDashboard: React.FC<PatientDashboardProps> = ({ session }) => {
-    const { toast } = useToast();
+const PatientDashboard: React.FC = () => {
     const router = useRouter();
+    const { data: session } = useSession();
+    const { fetchPrescriptions } = usePrescriptionStore();
     const [loading, setLoading] = useState<boolean>(true);
-    const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
-    const [orders, setOrders] = useState<OrderWithItems[]>([]);
-    const [notifications, setNotifications] = useState<Notification[]>([]);
     const [error, setError] = useState<string | null>(null);
+    const [orders, setOrders] = useState<OrderWithItems[]>([]);
+    const [upcomingAppointments, setUpcomingAppointments] = useState<any[]>([]);
+    const [activePrescriptions, setActivePrescriptions] = useState<Prescription[]>([]);
+    const [activeMedications, setActiveMedications] = useState<Medication[]>([]);
+    const [unreadNotifications, setUnreadNotifications] = useState<number>(0);
 
     useEffect(() => {
-        const fetchPatientData = async () => {
-            try {
-                setLoading(true);
-                setError(null);
-                
-                // Check if we have a valid user ID in the session
-                if (!session?.user?.id) {
-                    toast({
-                        title: "Authentication required",
-                        description: "Please sign in to view your dashboard.",
-                        variant: "destructive",
-                    });
-                    router.push('/signin');
-                    return;
-                }
+        // Only fetch data if we have a session
+        if (session?.user?.id) {
+            fetchPatientData();
+        }
+    }, [session]);
 
-                const userId = session.user.id;
-                console.log('Fetching data for user ID:', userId);
-                
-                // Fetch prescriptions with medications
-                const prescriptionsResponse = await getPatientPrescriptions(userId);
-                if (prescriptionsResponse.success && prescriptionsResponse.data) {
-                    setPrescriptions(prescriptionsResponse.data);
-                } else {
-                    if (prescriptionsResponse.error?.type === 'UNAUTHORIZED') {
-                        toast({
-                            title: "Session expired",
-                            description: "Please sign in again to view your dashboard.",
-                            variant: "destructive",
-                        });
-                        router.push('/signin');
-                        return;
-                    } else {
-                        toast({
-                            title: "Error",
-                            description: prescriptionsResponse.error?.message || "Failed to load prescriptions data.",
-                            variant: "destructive",
-                        });
-                    }
-                    setPrescriptions([]);
-                }
-                
-                // Fetch orders with items
-                const ordersData = await getPatientOrders(userId);
-                setOrders(ordersData);
-                
-                // Fetch notifications
-                const notificationsData = await getPatientNotifications(userId);
-                setNotifications(notificationsData);
-                
-            } catch (error) {
-                console.log('Error fetching patient data:', error);
-                toast({
-                    title: "Error",
-                    description: "Failed to load dashboard data. Please try again later.",
-                    variant: "destructive",
-                });
-                setError('Failed to load dashboard data. Please try again later.');
-                setPrescriptions([]);
-                setOrders([]);
-                setNotifications([]);
-            } finally {
-                setLoading(false);
-            }
-        };
+    const fetchPatientData = async () => {
+        if (!session?.user?.id) return;
         
-        fetchPatientData();
-    }, [session, toast, router]);
-    
-    // Get active prescriptions (status === 'active')
-    const activePrescriptions = prescriptions.filter(p => p.status === 'active');
-    
-    // Get all medications from active prescriptions
-    const activeMedications = activePrescriptions.flatMap(p => p.items);
-    
-    // Get pending orders
-    const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'processing');
-    
-    // Get unread notifications count
-    const unreadNotifications = notifications.filter(n => !n.isRead).length;
+        setLoading(true);
+        setError(null);
 
-    // Navigate handlers
+        try {
+            // Fetch prescriptions
+            let prescriptionsData: Prescription[] = [];
+            try {
+                prescriptionsData = await fetchPrescriptions(session.user.id);
+            } catch (prescriptionError) {
+                console.error('Error fetching prescriptions:', prescriptionError);
+                // Continue with other data fetches even if prescriptions fails
+                setError(prescriptionError instanceof Error ? 
+                    prescriptionError.message : 
+                    'Failed to load prescriptions');
+            }
+
+            // Filter active prescriptions
+            const active = prescriptionsData.filter(p => 
+                p.status.toUpperCase() === 'ACTIVE' || p.status.toUpperCase() === 'PENDING');
+            setActivePrescriptions(active);
+
+            // Extract medications from prescriptions
+            const medications: Medication[] = [];
+            prescriptionsData.forEach(prescription => {
+                if (prescription.items) {
+                    prescription.items.forEach(item => {
+                        medications.push({
+                            id: item.id,
+                            name: item.name,
+                            dosage: item.dosage,
+                            frequency: item.frequency,
+                            duration: item.duration,
+                            expiryDate: prescription.expiryDate
+                        });
+                    });
+                }
+            });
+            setActiveMedications(medications);
+
+            // Fetch notifications (and continue even if this fails)
+            try {
+                const notificationsResponse = await getPatientNotifications(session.user.id);
+                const unreadCount = notificationsResponse.filter(n => !n.isRead).length;
+                setUnreadNotifications(unreadCount);
+            } catch (notificationError) {
+                console.error('Error fetching notifications:', notificationError);
+                // Don't set overall error for just notification issues
+            }
+
+            // More data fetches can go here...
+            
+        } catch (error) {
+            console.error('Error fetching patient data:', error);
+            setError(error instanceof Error ? error.message : 'Failed to load data');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleNavigate = (path: string) => {
         router.push(path);
     };
@@ -184,37 +170,35 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({ session }) => {
     }
 
     return (
-        <>
-            <section className={styles.welcomeSection}>
-                <div className={styles.welcomeBubbles}></div>
-                <div className={styles.welcomeContent}>
-                    <h1 className={styles.welcomeHeading}>Welcome back, {session.user.name}</h1>
-                    <p className={styles.welcomeSubheading}>
-                        Here's your health summary and upcoming activities
-                    </p>
-                    
-                    <div className={styles.quickStats}>
-                        <div className={styles.statItem}>
-                            <div className={styles.statLabel}>Prescriptions</div>
-                            <div className={styles.statValue}>
-                                {loading ? '...' : activePrescriptions.length}
-                            </div>
+        <section className={styles.welcomeSection}>
+            <div className={styles.welcomeBubbles}></div>
+            <div className={styles.welcomeContent}>
+                <h1 className={styles.welcomeHeading}>Welcome back, {session.user.name}</h1>
+                <p className={styles.welcomeSubheading}>
+                    Here's your health summary and upcoming activities
+                </p>
+                
+                <div className={styles.quickStats}>
+                    <div className={styles.statItem}>
+                        <div className={styles.statLabel}>Prescriptions</div>
+                        <div className={styles.statValue}>
+                            {loading ? '...' : activePrescriptions.length}
                         </div>
-                        <div className={styles.statItem}>
-                            <div className={styles.statLabel}>Medications</div>
-                            <div className={styles.statValue}>
-                                {loading ? '...' : activeMedications.length}
-                            </div>
+                    </div>
+                    <div className={styles.statItem}>
+                        <div className={styles.statLabel}>Medications</div>
+                        <div className={styles.statValue}>
+                            {loading ? '...' : activeMedications.length}
                         </div>
-                        <div className={styles.statItem}>
-                            <div className={styles.statLabel}>Notifications</div>
-                            <div className={styles.statValue}>
-                                {loading ? '...' : unreadNotifications}
-                            </div>
+                    </div>
+                    <div className={styles.statItem}>
+                        <div className={styles.statLabel}>Notifications</div>
+                        <div className={styles.statValue}>
+                            {loading ? '...' : unreadNotifications}
                         </div>
                     </div>
                 </div>
-            </section>
+            </div>
             
             <div className={styles.container}>
                 <div className={styles.card}>
@@ -249,7 +233,16 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({ session }) => {
                                                 {prescription.expiryDate ? ` Expires: ${prescription.expiryDate}` : ' No expiration date'}
                                             </div>
                                         </div>
-                                        <span className={`${styles.badge} ${styles.badgeActive}`}>Active</span>
+                                        {/* Add status badge */}
+                                        <span className={`${styles.badge} ${
+                                            prescription.status.toUpperCase() === 'ACTIVE' ? styles.badgeActive : 
+                                            prescription.status.toUpperCase() === 'PENDING' ? styles.badgeUpcoming :
+                                            prescription.status.toUpperCase() === 'FILLED' ? styles.badgeCompleted :
+                                            prescription.status.toUpperCase() === 'EXPIRED' ? styles.badgeExpired :
+                                            styles.badgeDefault
+                                        }`}>
+                                            {prescription.status}
+                                        </span>
                                     </div>
                                 ))
                             ) : (
@@ -387,8 +380,34 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({ session }) => {
                     </div>
                 </div>
             </div>
-        </>
+        </section>
     );
 };
+
+async function fetchOrders(userId: string) {
+  try {
+    const response = await fetch('/api/db-operations', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        operation: 'getOrders',
+        params: { userId },
+      }),
+    });
+    
+    const result = await response.json();
+    if (result.success) {
+      return result.data;
+    } else {
+      console.error('Error fetching orders:', result.error);
+      return [];
+    }
+  } catch (error) {
+    console.error('Failed to fetch orders:', error);
+    return [];
+  }
+}
 
 export default PatientDashboard;

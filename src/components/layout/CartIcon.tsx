@@ -1,18 +1,20 @@
 'use client';
 
-import { useCart } from '@/contexts/CartContext';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useCart } from '@/contexts/CartContext';
 import styles from './CartIcon.module.css';
-import { useEffect, useState } from 'react';
 
 export default function CartIcon() {
-  const { totalItems } = useCart();
+  const { cart, getItemCount } = useCart();
   const [mounted, setMounted] = useState(false);
 
   // Only show badge after component has mounted on the client
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const cartItemCount = getItemCount();
 
   return (
     <Link href="/cart" className={styles.cartLink}>
@@ -22,8 +24,9 @@ export default function CartIcon() {
           <circle cx="20" cy="21" r="1"></circle>
           <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
         </svg>
-        {mounted && totalItems > 0 && (
-          <span className={styles.cartBadge}>{totalItems}</span>
+        
+        {mounted && cartItemCount > 0 && (
+          <span className={styles.cartCount}>{cartItemCount > 99 ? '99+' : cartItemCount}</span>
         )}
       </div>
     </Link>

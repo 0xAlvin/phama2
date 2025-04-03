@@ -1,10 +1,18 @@
 export interface Prescription {
   id: string;
-  dateIssued: string;
-  medication: string;
-  doctor: string;
-  status: 'Pending' | 'Filled' | 'Expired';
-  imageUrl: string;
-  pharmacy: string;
+  userId: string;
+  medicationName: string;
+  dosage: string;
   instructions: string;
+  doctorName: string;
+  pharmacyName: string;
+  pharmacyId?: string;
+  prescribedDate: string | Date;
+  expirationDate?: string | Date;
+  status: 'Active' | 'Pending' | 'Completed' | 'Expired';
+  refills?: number;
+  refillsRemaining?: number;
+  notes?: string;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 }

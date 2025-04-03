@@ -1,8 +1,9 @@
-import { OrderRepository } from '@/lib/repositories/OrderRepository';
-import { InventoryRepository } from '@/lib/repositories/InventoryRepository';
-import { NotificationRepository } from '@/lib/repositories/NotificationRepository';
-import { NotificationTypes } from '@/lib/models/Notification';
-import { OrderStatusType } from '@/lib/models/Order';
+import { OrderRepository } from '../repositories/OrderRepository';
+import { InventoryRepository } from '../repositories/InventoryRepository';
+import { NotificationRepository } from '../repositories/NotificationRepository';
+import { Order, OrderStatusType } from '../models/Order';
+import { OrderItem } from '../models/OrderItem';
+import { NotificationTypes } from '../models/Notification';
 
 export class OrderService {
   private orderRepository: OrderRepository;
@@ -28,6 +29,26 @@ export class OrderService {
   }
 
   async createOrder(orderData: any, orderItems: any[]) {
+    // Enhanced validation for required fields
+    if (!orderData.patientId) {
+      throw new Error('Patient ID is required');
+    }
+    
+    if (!orderData.pharmacyId) {
+      throw new Error('Pharmacy ID is required');
+    }
+    
+    if (!Array.isArray(orderItems) || orderItems.length === 0) {
+      throw new Error('At least one order item is required');
+    }
+    
+    // Calculate total amount if not provided
+    let totalAmount = orderData.totalAmount;
+    if (!totalAmount) {
+      totalAmount = orderItems.reduce((sum, item) => 
+        sum + (Number(item.price) * Number(item.quantity)), 0);
+    }
+    
     // Check inventory availability
     for (const item of orderItems) {
       const inventoryItems = await this.inventoryRepository.findByMedicationId(
@@ -42,36 +63,31 @@ export class OrderService {
       }
     }
     
-    // Create order
-    const order = await this.orderRepository.create(orderData, orderItems);
+    // Create order with all required fields
+    const order = await this.orderRepository.create({
+      patientId: orderData.patientId,
+      pharmacyId: orderData.pharmacyId,
+      totalAmount: totalAmount,
+      status: orderData.status || 'pending',
+      prescriptionId: orderData.prescriptionId || null
+    }, orderItems);
     
-    // Update inventory
+    // Update inventory quantities
     for (const item of orderItems) {
-      const inventoryItems = await this.inventoryRepository.findByMedicationId(
-        item.medicationId, 
-        orderData.pharmacyId
+      await this.inventoryRepository.decreaseQuantity(
+        orderData.pharmacyId,
+        item.medicationId,
+        item.quantity
       );
-      
-      let remainingQtyToDeduct = item.quantity;
-      
-      // Deduct from inventory (FIFO - First In First Out)
-      for (const inv of inventoryItems) {
-        if (remainingQtyToDeduct <= 0) break;
-        
-        const qtyToDeduct = Math.min(inv.quantity, remainingQtyToDeduct);
-        await this.inventoryRepository.updateQuantity(inv.id, inv.quantity - qtyToDeduct);
-        
-        remainingQtyToDeduct -= qtyToDeduct;
-      }
     }
     
-    // Send notification to pharmacy
+    // Notify pharmacy about new order
     await this.notificationRepository.create({
-      userId: orderData.pharmacyId, // Assuming pharmacy ID is also a user ID
+      userId: orderData.pharmacyId,
       title: 'New Order Received',
-      message: `A new order (#${order.id.substring(0, 8)}) has been placed.`,
-      type: NotificationTypes.ORDER_UPDATE,
-      relatedEntityId: order.id,
+      message: `You have received a new order (#${order?.id.substring(0, 8)}).`,
+      type: NotificationTypes.ORDER_NEW,
+      relatedEntityId: order?.id || '',
       relatedEntityType: 'order',
       isRead: false,
       channel: 'APP',

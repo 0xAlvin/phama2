@@ -6,23 +6,10 @@
     background-color: var(--background);
     transition: all 0.2s ease;
     max-width: 400px;
-    /* Limit the width of the upload container */
     margin: 0 auto;
-    /* Center the container */
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     padding: 1rem;
-    overflow: hidden;
 }
-.modern-upload-container img {
-    width: 100%;
-    max-width: 10em;
-    max-height: 10em;
-    height: auto;
-    object-fit: cover;
-    /* Ensure the image fills the container without distortion */
-    display: block;
-}
-
 
 .upload-area {
     display: flex;
@@ -33,12 +20,13 @@
     border: 2px dashed var(--border);
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
+    background-color: var(--background);
 }
 
 .upload-area:hover {
     border-color: var(--primary);
-    background-color: rgba(var(--primary-rgb), 0.05);
+    background-color: var(--accent);
 }
 
 .upload-area.drag-active {
@@ -46,19 +34,33 @@
     background-color: rgba(var(--primary-rgb), 0.1);
 }
 
+.upload-area.dragging {
+    border-color: var(--primary);
+    background-color: var(--accent);
+}
+
 .upload-icon {
-    width: 64px;
-    height: 64px;
-    color: var(--primary);
-    opacity: 0.8;
+    width: 48px;
+    height: 48px;
+    color: var(--muted-foreground);
     margin-bottom: 1rem;
 }
 
 .upload-text {
-    font-size: 1.125rem;
-    font-weight: 500;
+    text-align: center;
+}
+
+.upload-text p {
+    margin: 0;
+    font-size: 1rem;
     color: var(--foreground);
-    margin-bottom: 0.5rem;
+}
+
+.upload-text span {
+    font-size: 0.875rem;
+    color: var(--muted-foreground);
+    display: block;
+    margin-top: 0.5rem;
 }
 
 .upload-hint {
@@ -67,23 +69,32 @@
 }
 
 .preview-container {
-    position: relative;
     width: 100%;
-    max-width: 300px; /* Limit the width of the image container */
-    height: 300px; /* Set a fixed height for the container */
+    position: relative;
+    max-width: 300px;
+    height: 300px;
     overflow: hidden;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    margin: 0 auto; /* Center the container */
-    background-color: var(--background); /* Add a background color for better contrast */
+    margin: 0 auto;
+    background-color: var(--background);
+}
+
+.preview-image-container {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: var(--background);
 }
 
 .preview-image {
     width: 100%;
     height: 100%;
-    object-fit: contain; /* Ensure the image fits within the container without distortion */
+    object-fit: cover;
     display: block;
-    background-color: var(--background); /* Add a background color for transparency */
+    background-color: var(--background);
 }
 
 .preview-overlay {
@@ -106,29 +117,28 @@
     top: 0.75rem;
     right: 0.75rem;
     display: flex;
-    gap: 0.5rem;
+    gap: 0.75rem;
 }
 
 .action-button {
-    width: 36px;
-    height: 36px;
+    width: 2rem;
+    height: 2rem;
     border-radius: 50%;
     background-color: rgba(255, 255, 255, 0.9);
-    border: none;
+    color: var(--foreground);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.2s ease;
-    color: var(--foreground);
 }
 
 .action-button:hover {
-    background-color: white;
+    background-color: rgba(255, 255, 255, 0.95);
     transform: scale(1.05);
 }
 
-.action-button.remove {
+.action-button.remove:hover {
     color: var(--destructive);
 }
 
@@ -138,9 +148,7 @@
     left: 0;
     width: 100%;
     padding: 0.75rem;
-    background-color: rgba(var(--background-rgb), 0.8);
-    backdrop-filter: blur(4px);
-    font-size: 0.875rem;
+    background-color: rgba(0, 0, 0, 0.5);
     color: var(--foreground);
     display: flex;
     align-items: center;
@@ -169,6 +177,18 @@
     overflow: hidden;
     clip: rect(0, 0, 0, 0);
     border: 0;
+}
+
+.file-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
 }
 
 .upload-progress {
@@ -205,4 +225,16 @@
 
 .upload-error p {
     margin: 0;
+}
+
+.clear-button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.clear-button:hover {
+    opacity: 1;
 }

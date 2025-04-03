@@ -135,6 +135,7 @@ export const prescriptions = pgTable("prescriptions", {
     expiryDate: date("expiry_date"),
     status: varchar("status", { length: 50 }).notNull().default("active"),
     notes: text("notes"),
+    pharmaciesId: uuid("pharmacy_id").references(() => pharmacies.id),
     imageUrl: varchar("image_url", { length: 500 }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull()
@@ -303,6 +304,17 @@ export const prescriptionsRelations = relations(prescriptions, ({ one, many }) =
         references: [doctors.id],
     }),
     items: many(prescriptionItems),
+}));
+
+export const prescriptionItemsRelations = relations(prescriptionItems, ({ one }) => ({
+    prescription: one(prescriptions, {
+        fields: [prescriptionItems.prescriptionId],
+        references: [prescriptions.id],
+    }),
+    medication: one(medications, {
+        fields: [prescriptionItems.medicationId],
+        references: [medications.id],
+    }),
 }));
 
 export const medicationsRelations = relations(medications, ({ many }) => ({

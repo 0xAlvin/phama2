@@ -6,24 +6,32 @@ import { Loader2 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 // Import our custom CSS for the select component
 import '@/styles/components/custom-select.css';
+import { unstable_cache } from 'next/cache';
 
 interface CreateOrderModalProps {
     onClose: () => void;
     onOrderCreated: () => void;
 }
 
+// Match schema types
 interface Pharmacy {
     id: string;
     name: string;
 }
 
+// Match schema fields from medications and inventory tables
 interface Medication {
     id: string;
     name: string;
+    description?: string;
+    dosageForm?: string;
+    strength?: string;
     price: number;
     requiresPrescription: boolean;
-    available: boolean;
     quantity: number;
+    available: boolean;
+    uniqueKey?: string;
+    inventoryId?: string;
 }
 
 const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ onClose, onOrderCreated }) => {
@@ -34,7 +42,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ onClose, onOrderCre
     const [isLoadingPharmacies, setIsLoadingPharmacies] = useState<boolean>(true);
     const [isLoadingMedications, setIsLoadingMedications] = useState<boolean>(false);
     const [isCreatingOrder, setIsCreatingOrder] = useState<boolean>(false);
-    const { addToCart, items, clearCart, isAddingToCart } = useCartStore();
+    
     
     // Fetch available pharmacies on load
     useEffect(() => {
@@ -46,7 +54,8 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ onClose, onOrderCre
                 }
                 
                 const data = await response.json();
-                setPharmacies(data.pharmacies || []);
+                console.log('Fetched pharmacies:', data);
+                setPharmacies(data);
             } catch (error) {
                 console.error('Error fetching pharmacies:', error);
                 toast({
@@ -70,12 +79,23 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ onClose, onOrderCre
             setIsLoadingMedications(true);
             try {
                 const response = await fetch(`/api/pharmacy/${selectedPharmacy}/inventory`);
+                
                 if (!response.ok) {
                     throw new Error('Failed to fetch medications');
                 }
                 
                 const data = await response.json();
-                setMedications(data.medications || []);
+                if (data.success && Array.isArray(data.data)) {
+                    // Ensure each medication has a unique key by combining medicationId and inventory id
+                    const uniqueMedications = data.data.map((med: Medication) => ({
+                        ...med,
+                        // Create a unique key for React rendering
+                        uniqueKey: `${med.id}-${med.inventoryId || Math.random().toString(36).substring(7)}`
+                    }));
+                    setMedications(uniqueMedications);
+                } else {
+                    setMedications([]);
+                }
             } catch (error) {
                 console.error('Error fetching medications:', error);
                 toast({
@@ -83,6 +103,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ onClose, onOrderCre
                     description: "Failed to load medications from this pharmacy.",
                     variant: "destructive"
                 });
+                setMedications([]);
             } finally {
                 setIsLoadingMedications(false);
             }
@@ -112,29 +133,44 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ onClose, onOrderCre
         setIsCreatingOrder(true);
         
         try {
-            const orderData = {
-                pharmacyId: selectedPharmacy,
-                medications: selectedMedications.map(med => ({
-                    medicationId: med.id,
-                    quantity: 1,
-                    price: med.price
-                }))
-            };
-            
+            // Ensure proper medication data structure with correct IDs
+            const medications = selectedMedications.map(med => ({
+                medicationId: med.id, // This must be a valid UUID from the medications table
+                quantity: 1, // Set to 1 or use a quantity selector
+                price: med.price
+            }));
+
             const response = await fetch('/api/patient/orders', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(orderData)
+                body: JSON.stringify({
+                    pharmacyId: selectedPharmacy,
+                    medications: medications
+                })
             });
             
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to create order');
-            }
-            
             const data = await response.json();
+            
+            if (!response.ok) {
+                // Handle different error cases
+                if (response.status === 404) {
+                    toast({
+                        title: "Account Setup Required",
+                        description: "Your patient profile is not complete. Please complete your profile setup.",
+                        variant: "destructive"
+                    });
+                    
+                    // Optionally redirect to profile completion page
+                    // router.push('/dashboard/profile/complete');
+                    return;
+                }
+                
+                const errorMsg = data.error || `Failed to create order (${response.status})`;
+                console.error(`API Error: ${errorMsg}`);
+                throw new Error(errorMsg);
+            }
             
             toast({
                 title: "Success",
@@ -202,7 +238,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ onClose, onOrderCre
                                             <p>No medications available from this pharmacy.</p>
                                         ) : (
                                             medications.map(medication => (
-                                                <div key={medication.id} className={styles.medicationItem}>
+                                                <div key={medication.uniqueKey} className={styles.medicationItem}>
                                                     <div className={styles.medicationInfo}>
                                                         <h4>{medication.name}</h4>
                                                         <p>KES {medication.price.toFixed(2)}</p>

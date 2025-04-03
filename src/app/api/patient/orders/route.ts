@@ -2,118 +2,139 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { getPatientIdFromUserId, getPatientOrders, createPatientOrder } from '@/services/orderService';
 
-// GET endpoint to fetch patient orders
 export async function GET(request: Request) {
+  console.log("GET /api/patient/orders endpoint called");
+  
   try {
-    // Verify authentication
+    // Authenticate the request
     const session = await auth();
+    console.log("Session data:", JSON.stringify({
+      authenticated: !!session?.user,
+      userId: session?.user?.id || 'not-found'
+    }));
     
     if (!session?.user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+      console.log("Authentication failed: No user in session");
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Authentication required' 
+      }, { status: 401 });
     }
     
-    if (!session.user.id) {
-      return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+    const userId = session.user.id;
+    
+    if (!userId) {
+      console.log("User ID not found in session");
+      return NextResponse.json({ 
+        success: false, 
+        error: 'User ID not found' 
+      }, { status: 401 });
     }
     
     // Get patient ID from user ID
-    const patientId = await getPatientIdFromUserId(session.user.id);
+    console.log("Getting patient ID for user:", userId);
+    const patientId = await getPatientIdFromUserId(userId);
+    console.log("Patient ID result:", patientId || 'not-found');
     
     if (!patientId) {
-      return NextResponse.json(
-        { 
-          success: true, 
-          data: [], // Return empty array instead of error for better UX
-          message: 'No patient profile found for this user' 
-        }, 
-        { status: 200 }
-      );
+      // Return empty data instead of error when patient not found
+      console.warn(`No patient record found for user ID: ${userId}`);
+      return NextResponse.json({ 
+        success: true, 
+        data: [],
+        message: 'No patient record associated with this user'
+      });
     }
     
-    // Get patient orders - now with better error handling
+    // Get orders for the patient - with safer error handling
     try {
+      console.log("Fetching orders for patient:", patientId);
       const orders = await getPatientOrders(patientId, session);
+      console.log(`Found ${orders?.length || 0} orders`);
       
-      return NextResponse.json({
-        success: true,
-        data: orders
+      return NextResponse.json({ 
+        success: true, 
+        data: orders 
       });
-    } catch (error) {
-      console.error('Error in patient orders API:', error);
-      // Return empty data array instead of error
+    } catch (orderError) {
+      console.error('Error in orders retrieval:', orderError);
       return NextResponse.json({
-        success: true,
+        success: false,
         data: [],
-        message: error instanceof Error ? error.message : 'Could not fetch orders'
-      });
+        error: 'Error retrieving orders data'
+      }, { status: 200 }); // Return 200 with empty data rather than 500
     }
   } catch (error) {
-    console.error('Error fetching patient orders:', error);
-    // Return a 200 with empty data for better UX
-    return NextResponse.json({
-      success: true,
+    console.error('Error in patient orders API:', error);
+    
+    return NextResponse.json({ 
+      success: false,
       data: [],
-      error: error instanceof Error ? error.message : 'An unexpected error occurred'
-    }, { status: 200 });
+      error: error instanceof Error ? error.message : 'Failed to process request'
+    }, { status: 200 }); // Return 200 with empty data rather than 500
   }
 }
 
-// POST endpoint to create a new order
 export async function POST(request: Request) {
   try {
-    // Verify authentication
+    // Authenticate the request
     const session = await auth();
     
     if (!session?.user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+      return NextResponse.json({ 
+        error: 'Authentication required' 
+      }, { status: 401 });
     }
     
-    if (!session.user.id) {
-      return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+    const userId = session.user.id;
+    
+    if (!userId) {
+      return NextResponse.json({ 
+        error: 'User ID not found' 
+      }, { status: 401 });
     }
     
     // Get patient ID from user ID
-    const patientId = await getPatientIdFromUserId(session.user.id);
+    const patientId = await getPatientIdFromUserId(userId);
     
     if (!patientId) {
-      return NextResponse.json({ error: 'Patient profile not found' }, { status: 404 });
+      return NextResponse.json({ 
+        error: 'No patient record associated with this account'
+      }, { status: 404 });
     }
     
-    // Parse request body
-    const body = await request.json();
-    const { pharmacyId, medications, prescriptionId } = body;
-    
-    if (!pharmacyId) {
-      return NextResponse.json({ error: 'Pharmacy ID is required' }, { status: 400 });
+    // Parse the request body
+    const { pharmacyId, medications } = await request.json();
+    if (!pharmacyId || !medications || !Array.isArray(medications) || medications.length === 0) {
+      return NextResponse.json({
+        error: 'Invalid request. Required fields: pharmacyId, medications'
+      }, { status: 400 });
     }
     
-    if (!medications || !Array.isArray(medications) || medications.length === 0) {
-      return NextResponse.json({ error: 'At least one medication is required' }, { status: 400 });
-    }
-    
-    // Create the order
+    // Create the order with properly typed medications matching schema
     const result = await createPatientOrder(
       patientId,
       pharmacyId,
-      medications,
-      session,
-      prescriptionId
+      medications.map(med => ({
+        medicationId: med.medicationId, // Ensure this is a valid UUID
+        quantity: med.quantity,
+        price: med.price
+      }))
     );
     
     if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 400 });
+      return NextResponse.json({ success: result.success }, { status: 400 });
     }
     
     return NextResponse.json({
       success: true,
-      orderId: result.orderId,
+      id: result.orderId,
       message: 'Order created successfully'
     });
   } catch (error) {
     console.error('Error creating patient order:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'An unexpected error occurred' },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      error: error instanceof Error ? error.message : 'Failed to create order'
+    }, { status: 500 });
   }
 }

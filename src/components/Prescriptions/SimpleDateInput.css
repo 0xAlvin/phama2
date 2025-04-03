@@ -64,3 +64,43 @@
   width: 100%;
   max-width: 300px;
 }
+
+.w-full {
+  width: 100%;
+}
+
+.justify-start {
+  justify-content: flex-start;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.font-normal {
+  font-weight: normal;
+}
+
+.text-muted-foreground {
+  color: var(--muted-foreground);
+}
+
+.mr-2 {
+  margin-right: 0.5rem;
+}
+
+.h-4 {
+  height: 1rem;
+}
+
+.w-4 {
+  width: 1rem;
+}
+
+.w-auto {
+  width: auto;
+}
+
+.p-0 {
+  padding: 0;
+}

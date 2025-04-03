@@ -125,7 +125,7 @@ export default function PrescriptionRefill({ prescription }: PrescriptionRefillP
                 }}
               >
                 <span style={{ fontSize: '14px', fontWeight: '500' }}>Standard Delivery</span>
-                <span style={{ fontSize: '12px', color: '#666' }}>$2.99 • 2-3 days</span>
+                <span style={{ fontSize: '12px', color: '#666' }}>KES 399 • 2-3 days</span>
               </Label>
             </div>
             <div>
@@ -144,7 +144,7 @@ export default function PrescriptionRefill({ prescription }: PrescriptionRefillP
                 }}
               >
                 <span style={{ fontSize: '14px', fontWeight: '500' }}>Express Delivery</span>
-                <span style={{ fontSize: '12px', color: '#666' }}>$5.99 • Same day</span>
+                <span style={{ fontSize: '12px', color: '#666' }}>KES 799 • Same day</span>
               </Label>
             </div>
           </RadioGroup>
@@ -164,9 +164,9 @@ export default function PrescriptionRefill({ prescription }: PrescriptionRefillP
               >
                 Use default delivery address
               </Label>
-              <p style={{ fontSize: '12px', color: '#666' }}>
-                123 Main St, Apt 4B, Cityville, State 12345
-              </p>
+                <p style={{ fontSize: '12px', color: '#666' }}>
+                123 Kimathi Street, South C, Nairobi 00100, Kenya
+                </p>
             </div>
           </div>
         )}

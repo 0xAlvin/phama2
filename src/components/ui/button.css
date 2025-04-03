@@ -1,0 +1,117 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1;
+  border: 1px solid transparent;
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+}
+
+.button:disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* Size variants */
+.button-default {
+  height: 40px;
+  padding: 0 1rem;
+}
+
+.button-sm {
+  height: 36px;
+  padding: 0 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.button-lg {
+  height: 44px;
+  padding: 0 1.25rem;
+  font-size: 0.9375rem;
+}
+
+.button-icon {
+  height: 40px;
+  width: 40px;
+  padding: 0;
+}
+
+/* Appearance variants */
+.button-default {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.button-default:hover {
+  background-color: var(--primary);
+  opacity: 0.9;
+}
+
+.button-destructive {
+  background-color: var(--destructive);
+  color: var(--destructive-foreground);
+}
+
+.button-destructive:hover {
+  background-color: var(--destructive);
+  opacity: 0.9;
+}
+
+.button-outline {
+  background-color: transparent;
+  border-color: var(--border);
+  color: var(--foreground);
+}
+
+.button-outline:hover {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.button-secondary {
+  background-color: var(--secondary);
+  color: var(--secondary-foreground);
+}
+
+.button-secondary:hover {
+  background-color: var(--secondary);
+  opacity: 0.9;
+}
+
+.button-ghost {
+  background-color: transparent;
+}
+
+.button-ghost:hover {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.button-link {
+  background-color: transparent;
+  color: var(--primary);
+  text-decoration: underline;
+  height: auto;
+  padding: 0;
+}
+
+.button-link:hover {
+  text-decoration: none;
+}
+
+/* Additional utility for positioning icons */
+.w-4 {
+  width: 1rem;
+}
+
+.h-4 {
+  height: 1rem;
+}
+
+.mr-2 {
+  margin-right: 0.5rem;
+}

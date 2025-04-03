@@ -1,6 +1,6 @@
-import { db } from '@/lib/db';
-import { orders, orderItems } from '@/lib/schema';
-import { eq, and } from 'drizzle-orm';
+import { db } from '@/db';
+import { orders, orderItems } from '@/db/schema';
+import { eq, and, desc } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { Order, OrderStatusType } from '@/lib/models/Order';
 import { IOrderRepository } from './interfaces/IOrderRepository';
@@ -47,13 +47,30 @@ export class OrderRepository implements IOrderRepository {
 
   async create(orderData: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>, 
                items: Omit<OrderItem, 'id' | 'createdAt' | 'updatedAt'>[]): Promise<Order | undefined> {
+    // Validate required fields
+    if (!orderData.patientId) {
+      throw new Error('Patient ID is required for creating an order');
+    }
+    
+    if (!orderData.pharmacyId) {
+      throw new Error('Pharmacy ID is required for creating an order');
+    }
+    
+    if (!orderData.totalAmount) {
+      throw new Error('Total amount is required for creating an order');
+    }
+    
     const orderId = uuidv4();
     
     await db.transaction(async (tx) => {
-      // Insert order
+      // Insert order with explicit values for all required fields
       await tx.insert(orders).values({
-        ...orderData,
-        id: orderId
+        id: orderId,
+        patientId: orderData.patientId,
+        pharmacyId: orderData.pharmacyId,
+        totalAmount: orderData.totalAmount,
+        status: orderData.status || 'pending',
+        prescriptionId: orderData.prescriptionId || null
       });
       
       // Insert order items

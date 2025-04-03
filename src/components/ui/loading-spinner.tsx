@@ -1,28 +1,22 @@
-import { Loader2 } from "lucide-react";
-import '../../styles/components.css';
+import React from 'react';
+import { Loader2 } from 'lucide-react';
+import './loading-spinner.css';
 
 interface LoadingSpinnerProps {
-  size?: "sm" | "default" | "lg";
+  size?: number;
   className?: string;
 }
 
-export default function LoadingSpinner({ size = "default", className }: LoadingSpinnerProps) {
-  const sizeStyles = {
-    sm: { height: '16px', width: '16px' },
-    default: { height: '32px', width: '32px' },
-    lg: { height: '48px', width: '48px' },
-  };
-
+const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
+  size = 24, 
+  className = '' 
+}) => {
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '16px' }}>
-      <Loader2 
-        className={`animate-spin ${className || ''}`} 
-        style={{ 
-          color: '#0070f3',
-          ...sizeStyles[size],
-          animation: 'spin 1s linear infinite'
-        }} 
-      />
-    </div>
+    <Loader2 
+      size={size} 
+      className={`animate-spin ${className}`} 
+    />
   );
-}
+};
+
+export default LoadingSpinner;

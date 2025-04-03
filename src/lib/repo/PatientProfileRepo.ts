@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { patientProfiles } from "@/lib/schema";
+import { patientProfiles, patients } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 
 export class PatientProfileRepoError extends Error {
@@ -15,8 +15,18 @@ export class PatientProfileRepoError extends Error {
 export class PatientProfileRepo {
   static async findByUserId(userId: string) {
     try {
+      // First find the patient with this user ID
+      const patient = await db.query.patients.findFirst({
+        where: eq(patients.userId, userId)
+      });
+      
+      if (!patient) {
+        return null;
+      }
+      
+      // Then find the profile associated with this patient
       const profile = await db.query.patientProfiles.findFirst({
-        where: eq(patientProfiles.id, userId)
+        where: eq(patientProfiles.patientId, patient.id)
       });
       
       return profile;
@@ -31,14 +41,15 @@ export class PatientProfileRepo {
 
   static async create(profileData: { userId: string; photoUrl?: string | null; dateOfBirth?: Date | null; phoneNumber?: string | null; address?: string | null; }) {
     try {
-      const result = await db.insert(patientProfiles).values({
+      // Let Drizzle handle UUID generation
+      const [result] = await db.insert(patientProfiles).values({
         patientId: profileData.userId,
         allergies: null,
         medicalConditions: null,
         medications: null
       }).returning();
       
-      return result[0];
+      return result;
     } catch (error) {
       console.error("Error creating patient profile:", error);
       throw new PatientProfileRepoError(

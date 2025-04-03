@@ -1,0 +1,82 @@
+.tabs {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.tabs-list {
+  display: flex;
+  flex-shrink: 0;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+}
+
+.tabs-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background-color: transparent;
+  color: var(--muted-foreground);
+  border: none;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tabs-trigger:hover {
+  color: var(--foreground);
+}
+
+.tabs-trigger-active {
+  color: var(--foreground);
+  border-bottom-color: var(--primary);
+}
+
+.tabs-content {
+  padding: 1.5rem 0;
+  outline: none;
+}
+
+.tab-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tab-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.tabs-list-margin {
+  margin-bottom: 1rem;
+}
+
+.sticky-tabs-header {
+  position: sticky;
+  top: 0;
+  background-color: var(--background);
+  z-index: 10;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+.scrollable-content {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.content-card {
+  background-color: var(--background);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}

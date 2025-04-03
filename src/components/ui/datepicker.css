@@ -1,0 +1,158 @@
+/* src/components/DatePicker/DatePicker.css */
+
+.date-picker {
+    position: relative; /* Needed for absolute positioning of the calendar */
+    display: inline-block; /* Or block, depending on layout needs */
+    font-family: sans-serif;
+    color: #333;
+}
+
+.date-picker-label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.9em;
+    color: #555;
+}
+
+.date-picker-input-container {
+    display: flex;
+    align-items: center;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    overflow: hidden; /* Prevents button border showing outside */
+}
+
+
+.date-picker-input {
+    padding: 8px 12px;
+    font-size: 1em;
+    border: none; /* Border is on the container now */
+    flex-grow: 1; /* Takes available space */
+    cursor: pointer;
+    background-color: #fff;
+    min-width: 150px; /* Adjust as needed */
+}
+
+.date-picker-input:focus {
+    outline: none; /* Optional: remove default focus outline if using container's */
+}
+
+
+.calendar-toggle-button {
+    padding: 8px 10px;
+    border: none;
+    background-color: #f0f0f0;
+    cursor: pointer;
+    border-left: 1px solid #ccc; /* Separator line */
+    font-size: 1.2em;
+    line-height: 1; /* Align icon better */
+}
+
+.calendar-toggle-button:hover {
+    background-color: #e0e0e0;
+}
+
+
+.calendar {
+    position: absolute;
+    top: 100%; /* Position below the input */
+    left: 0;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 10px;
+    z-index: 1000; /* Ensure it's above other content */
+    margin-top: 5px; /* Small gap */
+    width: 280px; /* Fixed width, adjust as needed */
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 5px 0;
+}
+
+.calendar-month-year {
+    font-size: 1.1em;
+    font-weight: bold;
+    margin: 0;
+    text-align: center;
+    flex-grow: 1;
+}
+
+.calendar-nav {
+    background: none;
+    border: none;
+    font-size: 1.4em;
+    cursor: pointer;
+    padding: 0 10px;
+    color: #007bff;
+}
+.calendar-nav:hover {
+    color: #0056b3;
+}
+
+
+.calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-size: 0.8em;
+    color: #666;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.calendar-weekday {
+    padding: 5px 0;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px; /* Small gap between day cells */
+}
+
+.calendar-day {
+    display: flex; /* Use flex to center content easily */
+    justify-content: center;
+    align-items: center;
+    padding: 8px 0; /* Adjust padding as needed */
+    text-align: center;
+    cursor: pointer;
+    border: 1px solid transparent; /* Placeholder for borders */
+    border-radius: 4px;
+    background: none; /* Reset button background */
+    font-size: 0.9em;
+    height: 34px; /* Fixed height for alignment */
+    box-sizing: border-box; /* Include padding/border in element's total width/height */
+}
+
+.calendar-day:not(.empty):hover {
+    background-color: #f0f0f0;
+    border-color: #ddd;
+}
+
+.calendar-day.empty {
+    cursor: default;
+    background-color: transparent;
+}
+
+.calendar-day.today {
+    font-weight: bold;
+    border: 1px solid #007bff;
+    color: #007bff;
+}
+
+.calendar-day.selected {
+    background-color: #007bff;
+    color: #fff;
+    border-color: #0056b3;
+}
+
+.calendar-day.selected:hover {
+    background-color: #0056b3;
+}

@@ -1,756 +1,744 @@
-/**
- * Service for handling order-related API calls
- */
+import { db } from "@/lib/db";
+import { orders, orderItems, payments, patients, pharmacies, prescriptions, medications, inventory } from "@/lib/schema";
+import { eq, and, inArray } from "drizzle-orm";
+import { DrizzleError } from "drizzle-orm";
+import { Session } from 'next-auth';
 
-import { ApiError } from '@/types/api';
-import { db } from '@/lib/db';
-import { eq, desc, and, or, inArray } from 'drizzle-orm';
-import { orders, orderItems, medications, pharmacies, patients, users, pharmacyStaff } from '@/lib/schema';
-import type { Session } from 'next-auth';
-
-interface OrderItem {
-  id: string;
-  medicationId: string;
-  name: string;
-  quantity: number;
-  price: number;
-}
-
-interface OrderWithItems {
-  id: string;
+export interface CreateOrderData {
+  patientId: string;
   pharmacyId: string;
-  pharmacyName: string;
-  totalAmount: number;
-  formattedTotalAmount: string;
-  status: string;
-  statusClass: string;
-  createdAt: string;
-  formattedDate: string;
-  updatedAt: string;
-  medications: Array<{
-    name: string;
-    quantity: number;
-    price: number;
-    formattedPrice: string;
-  }>;
-  isCompletable: boolean;
-  isCancelable: boolean;
-}
-
-type OrderWithDetails = {
-  id: string;
-  pharmacyName: string;
-  totalAmount: number;
-  status: string;
-  createdAt: string;
-  medications: {
-    name: string;
+  prescriptionId: string | null;
+  items: {
+    medicationId: string;
     quantity: number;
     price: number;
   }[];
-};
-
-// Cache for pharmacy data to avoid repeated DB calls
-const pharmacyCache = new Map<string, { id: string, name: string }>();
-
-// Cache for user role lookup
-const userRoleCache = new Map<string, string>();
-
-/**
- * Checks if a user has permission to access patient data
- */
-export async function hasPatientAccess(userId: string, patientId: string): Promise<boolean> {
-  // Check role from cache first
-  let role = userRoleCache.get(userId);
-  
-  if (!role) {
-    // Get role from database
-    const user = await db.select({
-      role: users.role,
-    })
-    .from(users)
-    .where(eq(users.id, userId))
-    .then(results => results[0]);
-
-    role = user?.role;
-    
-    // Cache the role if found
-    if (role) {
-      userRoleCache.set(userId, role);
-    }
-  }
-
-  // ADMIN can access any patient data
-  if (role === 'ADMIN') return true;
-  
-  // Pharmacy users may be able to access patient data they have orders with
-  if (role === 'PHARMACY' || role === 'PHARMACY_STAFF') {
-    // Logic for pharmacy access to patient data could be added here
-    return false; // By default, pharmacies can't access patient data directly
-  }
-  
-  // For patient role, check if user is accessing their own data
-  if (role === 'PATIENT') {
-    // Get patient ID for current user
-    const patientData = await db.select({
-      id: patients.id,
-    })
-    .from(patients)
-    .where(eq(patients.userId, userId))
-    .then(results => results[0]);
-    
-    // If this is the patient's own data, allow access
-    return patientData?.id === patientId;
-  }
-  
-  return false;
+  status?: "pending" | "processing" | "completed" | "cancelled";
 }
 
-/**
- * Checks if a user has permission to access pharmacy data
- */
-export async function hasPharmacyAccess(userId: string, pharmacyId: string): Promise<boolean> {
-  // Check role from cache first
-  let role = userRoleCache.get(userId);
-  
-  if (!role) {
-    // Get role from database
-    const user = await db.select({
-      role: users.role,
-    })
-    .from(users)
-    .where(eq(users.id, userId))
-    .then(results => results[0]);
+export interface OrderWithItems {
+  id: string;
+  patientId: string;
+  pharmacyId: string;
+  prescriptionId: string | null;
+  status: string;
+  totalAmount: number;
+  createdAt: Date;
+  updatedAt: Date;
+  items: {
+    id: string;
+    orderId: string;
+    medicationId: string;
+    medicationName?: string;
+    quantity: number;
+    price: number;
+  }[];
+  patient?: {
+    id: string;
+    // Additional patient fields if needed
+  };
+  pharmacy?: {
+    id: string;
+    name?: string;
+    // Additional pharmacy fields if needed
+  };
+}
 
-    role = user?.role;
-    
-    // Cache the role if found
-    if (role) {
-      userRoleCache.set(userId, role);
-    }
+export class OrderServiceError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "OrderServiceError";
   }
-
-  // ADMIN can access any pharmacy's data
-  if (role === 'ADMIN') return true;
-  
-  // Check if user is associated with this pharmacy
-  const pharmacyStaffData = await db.select({
-    id: pharmacyStaff.id,
-  })
-  .from(pharmacyStaff)
-  .where(
-    and(
-      eq(pharmacyStaff.userId, userId),
-      eq(pharmacyStaff.pharmacyId, pharmacyId)
-    )
-  )
-  .then(results => results[0]);
-  
-  // If user is part of pharmacy staff or the pharmacy owner
-  return !!pharmacyStaffData;
 }
 
-// Format price to KES currency
-function formatCurrency(amount: number): string {
-  return `KES ${amount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
-}
-
-/**
- * Get pharmacy ID from user ID
- */
-export async function getPharmacyIdFromUserId(userId: string): Promise<string | null> {
-  // First check if user is directly associated with a pharmacy (owner)
-  const pharmacyData = await db
-    .select({
-      id: pharmacies.id,
-    })
-    .from(pharmacies)
-    .where(eq(pharmacies.userId, userId))
-    .then(results => results[0]);
-  
-  if (pharmacyData?.id) {
-    return pharmacyData.id;
-  }
-  
-  // If not an owner, check if they're staff
-  const staffData = await db
-    .select({
-      pharmacyId: pharmacyStaff.pharmacyId,
-    })
-    .from(pharmacyStaff)
-    .where(eq(pharmacyStaff.userId, userId))
-    .then(results => results[0]);
-  
-  return staffData?.pharmacyId || null;
-}
-
-/**
- * Fetches orders for a specific patient with optimized queries
- */
-export async function getPatientOrders(
-  patientId: string, 
-  session?: Session | null
-): Promise<OrderWithDetails[]> {
-  try {
-    // Security check if session is provided
-    if (session?.user?.id) {
-      // If session user is the patient trying to access their own data
-      if (session.user.role === 'PATIENT') {
-        // Get the patient record for this user to compare IDs
-        const patientData = await db.select({
-          id: patients.id,
-        })
-        .from(patients)
-        .where(eq(patients.userId, session.user.id))
-        .then(results => results[0]);
-        
-        // If this patient doesn't exist or is trying to access someone else's orders
-        // Just continue - the error will be handled properly by the API endpoint
-        if (!patientData) {
-          console.warn(`User ${session.user.id} has no associated patient profile`);
-        } else if (patientData.id !== patientId) {
-          console.warn(`User's patient ID ${patientData.id} doesn't match requested patient ID ${patientId}`);
+export class OrderService {
+  /**
+   * Create a new order with order items
+   */
+  async createOrder(data: CreateOrderData): Promise<string> {
+    try {
+      // Ensure critical fields are provided
+      if (!data.patientId) {
+        throw new OrderServiceError("Patient ID is required");
+      }
+      
+      if (!data.pharmacyId) {
+        throw new OrderServiceError("Pharmacy ID is required");
+      }
+      
+      if (!data.items || data.items.length === 0) {
+        throw new OrderServiceError("Order must contain at least one item");
+      }
+      
+      // Validate patient exists
+      const patient = await db.query.patients.findFirst({
+        where: eq(patients.id, data.patientId)
+      });
+      
+      if (!patient) {
+        throw new OrderServiceError("Patient not found");
+      }
+      
+      // Validate pharmacy exists
+      const pharmacy = await db.query.pharmacies.findFirst({
+        where: eq(pharmacies.id, data.pharmacyId)
+      });
+      
+      if (!pharmacy) {
+        throw new OrderServiceError("Pharmacy not found");
+      }
+      
+      // Validate items
+      for (const item of data.items) {
+        if (!item.medicationId) {
+          throw new OrderServiceError("Medication ID is required for all order items");
         }
-        // We shouldn't throw an error here, let the API handle access checking
+        
+        if (!item.quantity || item.quantity <= 0) {
+          throw new OrderServiceError("Valid quantity is required for all order items");
+        }
+        
+        if (!item.price || item.price <= 0) {
+          throw new OrderServiceError("Valid price is required for all order items");
+        }
+        
+        // Check medication exists
+        const medication = await db.query.medications.findFirst({
+          where: eq(medications.id, item.medicationId)
+        });
+        
+        if (!medication) {
+          throw new OrderServiceError(`Medication with ID ${item.medicationId} not found`);
+        }
+        
+        // Check inventory
+        const inventoryItem = await db.query.inventory.findFirst({
+          where: and(
+            eq(inventory.pharmacyId, data.pharmacyId),
+            eq(inventory.medicationId, item.medicationId)
+          )
+        });
+        
+        if (!inventoryItem || inventoryItem.quantity < item.quantity) {
+          throw new OrderServiceError(`Not enough stock for medication ${medication.name}`);
+        }
       }
-    }
-    
-    // Fetch orders for the patient
-    const ordersData = await db.select({
-      id: orders.id,
-      pharmacyId: orders.pharmacyId,
-      totalAmount: orders.totalAmount,
-      status: orders.status,
-      createdAt: orders.createdAt,
-      updatedAt: orders.updatedAt,
-    })
-    .from(orders)
-    .where(eq(orders.patientId, patientId))
-    .orderBy(desc(orders.createdAt));
-    
-    if (ordersData.length === 0) {
-      return [];
-    }
-    
-    // Extract all order IDs and pharmacy IDs for batch queries
-    const orderIds = ordersData.map(order => order.id);
-    const pharmacyIds = [...new Set(ordersData.map(order => order.pharmacyId))];
-    
-    // Batch fetch all needed pharmacies that aren't cached
-    const uncachedPharmacyIds = pharmacyIds.filter(id => !pharmacyCache.has(id));
-    if (uncachedPharmacyIds.length > 0) {
-      const pharmaciesData = await db.select({
-        id: pharmacies.id,
-        name: pharmacies.name,
-      })
-      .from(pharmacies)
-      .where(inArray(pharmacies.id, uncachedPharmacyIds));
       
-      // Update cache
-      for (const pharmacy of pharmaciesData) {
-        pharmacyCache.set(pharmacy.id, pharmacy);
-      }
-    }
-    
-    // Batch fetch all order items and their medications in one query
-    const allOrderItems = await db
-      .select({
-        orderId: orderItems.orderId,
-        quantity: orderItems.quantity,
-        price: orderItems.price,
-        medicationId: orderItems.medicationId,
-        medicationName: medications.name,
-      })
-      .from(orderItems)
-      .innerJoin(medications, eq(orderItems.medicationId, medications.id))
-      .where(inArray(orderItems.orderId, orderIds));
-    
-    // Group order items by order ID
-    const orderItemsMap = allOrderItems.reduce((map, item) => {
-      if (!map.has(item.orderId)) {
-        map.set(item.orderId, []);
-      }
-      map.get(item.orderId)?.push(item);
-      return map;
-    }, new Map<string, typeof allOrderItems>());
-    
-    // Format orders with their associated data
-    const formattedOrders = ordersData.map(order => {
-      const pharmacy = pharmacyCache.get(order.pharmacyId);
-      const items = orderItemsMap.get(order.id) || [];
+      // Calculate total amount
+      const totalAmount = data.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       
-      const medicationsData = items.map(item => ({
-        name: item.medicationName || 'Unknown Medication',
-        quantity: item.quantity,
-        price: Number(item.price),
-        formattedPrice: formatCurrency(Number(item.price)),
+      let orderId: string;
+      
+      await db.transaction(async (tx) => {
+        // Insert order with explicit values for all required fields
+        const result = await tx.insert(orders).values({
+          patientId: data.patientId,
+          pharmacyId: data.pharmacyId,
+          prescriptionId: data.prescriptionId,
+          status: data.status || "pending",
+          totalAmount,
+        }).returning({ id: orders.id });
+        
+        orderId = result[0].id;
+        
+        // Insert order items
+        for (const item of data.items) {
+          await tx.insert(orderItems).values({
+            orderId: orderId,
+            medicationId: item.medicationId,
+            quantity: item.quantity,
+            price: item.price,
+          });
+          
+          // Update inventory
+          await tx.update(inventory)
+            .set({
+              quantity: (old) => old.quantity - item.quantity,
+              updatedAt: new Date()
+            })
+            .where(
+              and(
+                eq(inventory.pharmacyId, data.pharmacyId),
+                eq(inventory.medicationId, item.medicationId)
+              )
+            );
+        }
+      });
+      
+      return orderId;
+    } catch (error) {
+      if (error instanceof OrderServiceError) {
+        throw error;
+      }
+      if (error instanceof DrizzleError) {
+        throw new OrderServiceError(`Database error: ${error.message}`);
+      }
+      throw new OrderServiceError(`Failed to create order: ${(error as Error).message}`);
+    }
+  }
+
+  /**
+   * Get order by ID with items
+   */
+  async getOrderById(orderId: string): Promise<OrderWithItems | null> {
+    try {
+      // Validate orderId to prevent database errors
+      if (!orderId || typeof orderId !== 'string' || orderId === 'undefined') {
+        throw new OrderServiceError("Invalid order ID provided");
+      }
+      
+      const order = await db.query.orders.findFirst({
+        where: eq(orders.id, orderId),
+      });
+
+      if (!order) {
+        return null;
+      }
+
+      const items = await db.query.orderItems.findMany({
+        where: eq(orderItems.orderId, orderId),
+      });
+
+      // If we want to include medication names, we need to fetch them
+      const medicationIds = items.map(item => item.medicationId);
+      const medicationsData = await db.query.medications.findMany({
+        where: inArray(medications.id, medicationIds),
+      });
+
+      // Create a lookup map for medications
+      const medicationMap = new Map();
+      medicationsData.forEach(med => {
+        medicationMap.set(med.id, med);
+      });
+
+      // Enrich order items with medication names
+      const enrichedItems = items.map(item => ({
+        ...item,
+        medicationName: medicationMap.get(item.medicationId)?.name
       }));
-      
+
       return {
-        id: order.id,
-        pharmacyName: pharmacy ? pharmacy.name : 'Unknown Pharmacy',
-        totalAmount: Number(order.totalAmount),
-        formattedTotalAmount: formatCurrency(Number(order.totalAmount)),
-        status: formatOrderStatus(order.status),
-        statusClass: getStatusClass(order.status),
-        createdAt: order.createdAt.toISOString(),
-        formattedDate: formatDate(order.createdAt),
-        medications: medicationsData,
-        isCompletable: ['pending', 'processing'].includes(order.status.toLowerCase()),
-        isCancelable: ['pending', 'processing'].includes(order.status.toLowerCase()),
+        ...order,
+        totalAmount: this.ensureNumericAmount(order.totalAmount),
+        items: enrichedItems
       };
+    } catch (error) {
+      if (error instanceof DrizzleError) {
+        throw new OrderServiceError(`Database error: ${error.message}`);
+      }
+      throw new OrderServiceError(`Failed to get order: ${(error as Error).message}`);
+    }
+  }
+
+  /**
+   * Get orders for a patient
+   */
+  async getPatientOrders(patientId: string): Promise<OrderWithItems[]> {
+    try {
+      const patientOrders = await db.query.orders.findMany({
+        where: eq(orders.patientId, patientId),
+        orderBy: (orders, { desc }) => [desc(orders.createdAt)]
+      });
+
+      const result: OrderWithItems[] = [];
+
+      for (const order of patientOrders) {
+        const items = await db.query.orderItems.findMany({
+          where: eq(orderItems.orderId, order.id),
+        });
+
+        result.push({
+          ...order,
+          totalAmount: this.ensureNumericAmount(order.totalAmount),
+          items: items
+        });
+      }
+
+      return result;
+    } catch (error) {
+      if (error instanceof DrizzleError) {
+        throw new OrderServiceError(`Database error: ${error.message}`);
+      }
+      throw new OrderServiceError(`Failed to get patient orders: ${(error as Error).message}`);
+    }
+  }
+
+  /**
+   * Get orders for a pharmacy
+   */
+  async getPharmacyOrders(pharmacyId: string): Promise<OrderWithItems[]> {
+    try {
+      const pharmacyOrders = await db.query.orders.findMany({
+        where: eq(orders.pharmacyId, pharmacyId),
+        orderBy: (orders, { desc }) => [desc(orders.createdAt)],
+        with: {
+          items: {
+            medication: true
+          },
+          pharmacy: true,
+          prescription: true
+        }
+      });
+
+      const result: OrderWithItems[] = [];
+
+      for (const order of pharmacyOrders) {
+        const items = await db.query.orderItems.findMany({
+          where: eq(orderItems.orderId, order.id),
+        });
+
+        result.push({
+          ...order,
+          totalAmount: this.ensureNumericAmount(order.totalAmount),
+          items: items
+        });
+      }
+
+      console.log(`Found ${pharmacyOrders.length} pharmacy orders in database`);
+      if (pharmacyOrders.length > 0) {
+        console.log("First order details:", JSON.stringify({
+          id: pharmacyOrders[0].id,
+          status: pharmacyOrders[0].status,
+          patientId: pharmacyOrders[0].patientId,
+          itemCount: pharmacyOrders[0].items?.length || 0,
+          hasPharmacy: !!pharmacyOrders[0].pharmacy
+        }));
+      }
+
+      return result;
+    } catch (error) {
+      if (error instanceof DrizzleError) {
+        throw new OrderServiceError(`Database error: ${error.message}`);
+      }
+      throw new OrderServiceError(`Failed to get pharmacy orders: ${(error as Error).message}`);
+    }
+  }
+
+  /**
+   * Update order status
+   */
+  async updateOrderStatus(orderId: string, status: string): Promise<void> {
+    try {
+      const order = await db.query.orders.findFirst({
+        where: eq(orders.id, orderId),
+      });
+
+      if (!order) {
+        throw new OrderServiceError("Order not found");
+      }
+
+      await db.update(orders)
+        .set({ 
+          status,
+          updatedAt: new Date()
+        })
+        .where(eq(orders.id, orderId));
+    } catch (error) {
+      if (error instanceof OrderServiceError) {
+        throw error;
+      }
+      if (error instanceof DrizzleError) {
+        throw new OrderServiceError(`Database error: ${error.message}`);
+      }
+      throw new OrderServiceError(`Failed to update order status: ${(error as Error).message}`);
+    }
+  }
+
+  /**
+   * Record payment for an order
+   */
+  async recordPayment(orderId: string, amount: number, paymentMethod: string): Promise<string> {
+    try {
+      const order = await db.query.orders.findFirst({
+        where: eq(orders.id, orderId),
+      });
+
+      if (!order) {
+        throw new OrderServiceError("Order not found");
+      }
+
+      // Check if payment amount matches order total - convert totalAmount to number first
+      const numericTotalAmount = this.ensureNumericAmount(order.totalAmount);
+      
+      if (amount !== numericTotalAmount) {
+        throw new OrderServiceError(`Payment amount (${amount}) does not match order total (${numericTotalAmount})`);
+      }
+
+      // Let Drizzle handle the UUID generation for payment ID
+      const [payment] = await db.insert(payments).values({
+        orderId,
+        amount,
+        paymentMethod,
+        status: "completed",
+      }).returning({ id: payments.id });
+
+      // Update order status to completed if payment is successful
+      await this.updateOrderStatus(orderId, "completed");
+
+      return payment.id;
+    } catch (error) {
+      if (error instanceof OrderServiceError) {
+        throw error;
+      }
+      if (error instanceof DrizzleError) {
+        throw new OrderServiceError(`Database error: ${error.message}`);
+      }
+      throw new OrderServiceError(`Failed to record payment: ${(error as Error).message}`);
+    }
+  }
+
+  /**
+   * Cancel an order
+   */
+  async cancelOrder(orderId: string): Promise<void> {
+    try {
+      const order = await db.query.orders.findFirst({
+        where: eq(orders.id, orderId),
+      });
+
+      if (!order) {
+        throw new OrderServiceError("Order not found");
+      }
+
+      // Only pending and processing orders can be cancelled
+      if (order.status !== "pending" && order.status !== "processing") {
+        throw new OrderServiceError(`Cannot cancel order with status: ${order.status}`);
+      }
+
+      // Get order items to restore inventory
+      const items = await db.query.orderItems.findMany({
+        where: eq(orderItems.orderId, orderId),
+      });
+
+      await db.transaction(async (tx) => {
+        // Update order status
+        await tx.update(orders)
+          .set({ 
+            status: "cancelled",
+            updatedAt: new Date()
+          })
+          .where(eq(orders.id, orderId));
+
+        // Restore inventory for each item - fix inventory field name
+        for (const item of items) {
+          await tx.update(inventory)
+            .set({
+              quantity: (old) => old.quantity + item.quantity,
+              updatedAt: new Date()
+            })
+            .where(
+              and(
+                eq(inventory.pharmacyId, order.pharmacyId),
+                eq(inventory.medicationId, item.medicationId)
+              )
+            );
+        }
+      });
+    } catch (error) {
+      if (error instanceof OrderServiceError) {
+        throw error;
+      }
+      if (error instanceof DrizzleError) {
+        throw new OrderServiceError(`Database error: ${error.message}`);
+      }
+      throw new OrderServiceError(`Failed to cancel order: ${(error as Error).message}`);
+    }
+  }
+
+  /**
+   * Ensures that a value is returned as a number
+   * This is needed because Drizzle ORM might return decimal fields as strings
+   */
+  private ensureNumericAmount(amount: any): number {
+    if (typeof amount === 'number') {
+      return amount;
+    }
+    
+    if (typeof amount === 'string') {
+      return parseFloat(amount);
+    }
+    
+    if (amount && typeof amount.toString === 'function') {
+      return parseFloat(amount.toString());
+    }
+    
+    return 0; // Default to zero if conversion isn't possible
+  }
+}
+
+/**
+ * Gets the patient ID associated with a user account
+ */
+async function getPatientIdFromUserId(userId: string, email?: string): Promise<string | null> {
+  try {
+    // Find patient record with this userId
+    const patient = await db.query.patients.findFirst({
+      where: eq(patients.userId, userId),
+      columns: {
+        id: true
+      }
     });
     
-    return formattedOrders;
-  } catch (error) {
-    console.error('Error in getPatientOrders:', error);
-    return []; // Return empty array instead of throwing
-  }
-}
-
-/**
- * Fetches orders for a specific pharmacy with optimized queries
- */
-export async function getPharmacyOrders(
-  pharmacyId: string, 
-  session?: Session | null
-): Promise<OrderWithDetails[]> {
-  // Security check if session is provided
-  if (session?.user?.id) {
-    const hasAccess = await hasPharmacyAccess(session.user.id, pharmacyId);
-    if (!hasAccess) {
-      throw new Error('Unauthorized access to pharmacy orders');
-    }
-  }
-  
-  // Fetch orders for the pharmacy
-  const ordersData = await db.select({
-    id: orders.id,
-    patientId: orders.patientId,
-    pharmacyId: orders.pharmacyId,
-    totalAmount: orders.totalAmount,
-    status: orders.status,
-    createdAt: orders.createdAt,
-    updatedAt: orders.updatedAt,
-  })
-  .from(orders)
-  .where(eq(orders.pharmacyId, pharmacyId))
-  .orderBy(desc(orders.createdAt));
-  
-  if (ordersData.length === 0) {
-    return [];
-  }
-  
-  // Extract all patient IDs for batch queries
-  const patientIds = [...new Set(ordersData.map(order => order.patientId))];
-  
-  // Batch fetch all patient names
-  const patientsData = await db.select({
-    id: patients.id,
-    firstName: patients.firstName,
-    lastName: patients.lastName,
-  })
-  .from(patients)
-  .where(inArray(patients.id, patientIds));
-  
-  // Create a map of patients for quick lookup
-  const patientMap = new Map(
-    patientsData.map(patient => [patient.id, patient])
-  );
-  
-  // Extract all order IDs for batch queries
-  const orderIds = ordersData.map(order => order.id);
-  
-  // Batch fetch all order items and their medications in one query
-  const allOrderItems = await db
-    .select({
-      orderId: orderItems.orderId,
-      quantity: orderItems.quantity,
-      price: orderItems.price,
-      medicationId: orderItems.medicationId,
-      medicationName: medications.name,
-    })
-    .from(orderItems)
-    .innerJoin(medications, eq(orderItems.medicationId, medications.id))
-    .where(inArray(orderItems.orderId, orderIds));
-  
-  // Group order items by order ID
-  const orderItemsMap = allOrderItems.reduce((map, item) => {
-    if (!map.has(item.orderId)) {
-      map.set(item.orderId, []);
-    }
-    map.get(item.orderId)?.push(item);
-    return map;
-  }, new Map<string, typeof allOrderItems>());
-  
-  // Format orders with their associated data
-  const formattedOrders = ordersData.map(order => {
-    const patient = patientMap.get(order.patientId);
-    const items = orderItemsMap.get(order.id) || [];
-    
-    const medicationsData = items.map(item => ({
-      name: item.medicationName || 'Unknown Medication',
-      quantity: item.quantity,
-      price: Number(item.price),
-      formattedPrice: formatCurrency(Number(item.price)),
-    }));
-    
-    return {
-      id: order.id,
-      patientId: order.patientId,
-      patientName: patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown Patient',
-      pharmacyName: "Current Pharmacy", // Add pharmacyName to match OrderWithDetails type
-      totalAmount: Number(order.totalAmount),
-      formattedTotalAmount: formatCurrency(Number(order.totalAmount)),
-      status: formatOrderStatus(order.status),
-      statusClass: getStatusClass(order.status),
-      createdAt: order.createdAt.toISOString(),
-      formattedDate: formatDate(order.createdAt),
-      medications: medicationsData,
-      isCompletable: ['pending', 'processing'].includes(order.status.toLowerCase()),
-      isCancelable: ['pending'].includes(order.status.toLowerCase()),
-      isDeliverable: ['processing'].includes(order.status.toLowerCase()),
-    };
-  });
-  
-  return formattedOrders;
-}
-
-/**
- * Format date for display
- */
-function formatDate(date: Date): string {
-  return new Date(date).toLocaleDateString('en-KE', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-}
-
-/**
- * Format order status for display
- */
-function formatOrderStatus(status: string): string {
-  const statusMap: Record<string, string> = {
-    'pending': 'Pending',
-    'processing': 'Processing',
-    'delivered': 'Delivered',
-    'completed': 'Completed',
-    'cancelled': 'Cancelled',
-  };
-  
-  return statusMap[status.toLowerCase()] || status;
-}
-
-/**
- * Get CSS class for status styling
- */
-function getStatusClass(status: string): string {
-  const statusClassMap: Record<string, string> = {
-    'pending': 'bg-yellow-100 text-yellow-800',
-    'processing': 'bg-blue-100 text-blue-800',
-    'delivered': 'bg-green-100 text-green-800',
-    'completed': 'bg-green-100 text-green-800',
-    'cancelled': 'bg-red-100 text-red-800',
-  };
-  
-  return statusClassMap[status.toLowerCase()] || 'bg-gray-100 text-gray-800';
-}
-
-/**
- * Get patient ID from user ID (useful when user ID != patient ID)
- */
-export async function getPatientIdFromUserId(userId: string): Promise<string | null> {
-  const patientData = await db
-    .select({
-      id: patients.id,
-    })
-    .from(patients)
-    .where(eq(patients.userId, userId))
-    .then(results => results[0]);
-  
-  return patientData?.id || null;
-}
-
-/**
- * Fetches a specific order by ID with improved error handling and permission checks
- */
-export const getOrderById = async (
-  orderId: string, 
-  session?: Session | null
-): Promise<OrderWithItems | null> => {
-  try {
-    // Get the order with patient info to check permissions
-    const orderWithPatient = await db
-      .select({
-        id: orders.id,
-        patientId: orders.patientId,
-        pharmacyId: orders.pharmacyId,
-        totalAmount: orders.totalAmount,
-        status: orders.status,
-        createdAt: orders.createdAt,
-        updatedAt: orders.updatedAt,
-      })
-      .from(orders)
-      .where(eq(orders.id, orderId))
-      .then(results => results[0]);
-    
-    if (!orderWithPatient) {
-      throw new Error('Order not found');
+    if (patient?.id) {
+      return patient.id;
     }
     
-    // Security check if session is provided
-    if (session?.user?.id) {
-      const hasAccess = await hasPatientAccess(session.user.id, orderWithPatient.patientId);
-      if (!hasAccess) {
-        throw new Error('Unauthorized access to order');
+    // If no patient record found and email is provided, try to create one
+    if (!patient && email) {
+      try {
+        // Import here to avoid circular dependencies
+        const { getOrCreatePatientProfile } = await import('@/lib/utils/userUtils');
+        const newPatient = await getOrCreatePatientProfile(userId, email);
+        return newPatient?.id || null;
+      } catch (createError) {
+        console.error('Failed to create patient profile:', createError);
+        return null;
       }
     }
     
-    // Get pharmacy details (check cache first)
-    let pharmacy = pharmacyCache.get(orderWithPatient.pharmacyId);
-    
-    if (!pharmacy) {
-      pharmacy = await db
-        .select({
-          id: pharmacies.id,
-          name: pharmacies.name,
-        })
-        .from(pharmacies)
-        .where(eq(pharmacies.id, orderWithPatient.pharmacyId))
-        .then(results => results[0]);
-      
-      if (pharmacy) {
-        pharmacyCache.set(pharmacy.id, pharmacy);
-      }
-    }
-    
-    // Get order items with medication details
-    const itemsWithMedications = await db
-      .select({
-        id: orderItems.id,
-        quantity: orderItems.quantity,
-        price: orderItems.price,
-        medicationId: orderItems.medicationId,
-        medicationName: medications.name,
-      })
-      .from(orderItems)
-      .innerJoin(medications, eq(orderItems.medicationId, medications.id))
-      .where(eq(orderItems.orderId, orderId));
-    
-    const medicationsData = itemsWithMedications.map(item => ({
-      name: item.medicationName || 'Unknown Medication',
-      quantity: item.quantity,
-      price: Number(item.price),
-      formattedPrice: formatCurrency(Number(item.price)),
-    }));
-    
-    return {
-      id: orderWithPatient.id,
-      pharmacyId: orderWithPatient.pharmacyId,
-      pharmacyName: pharmacy?.name || 'Unknown Pharmacy',
-      totalAmount: Number(orderWithPatient.totalAmount),
-      formattedTotalAmount: formatCurrency(Number(orderWithPatient.totalAmount)),
-      status: formatOrderStatus(orderWithPatient.status),
-      statusClass: getStatusClass(orderWithPatient.status),
-      createdAt: orderWithPatient.createdAt.toISOString(),
-      formattedDate: formatDate(orderWithPatient.createdAt),
-      updatedAt: orderWithPatient.updatedAt.toISOString(),
-      medications: medicationsData,
-      isCompletable: ['pending', 'processing'].includes(orderWithPatient.status.toLowerCase()),
-      isCancelable: ['pending', 'processing'].includes(orderWithPatient.status.toLowerCase()),
-    };
+    return null;
   } catch (error) {
-    console.error(`Error fetching order ${orderId}:`, error);
+    console.error('Error getting patient ID from user ID:', error);
     return null;
   }
-};
+}
 
 /**
- * Creates a new order with validation and permission checks
+ * Gets the pharmacy ID associated with a user account
  */
-export const createOrder = async (
+async function getPharmacyIdFromUserId(userId: string): Promise<string | null> {
+  try {
+    console.log(`Looking up pharmacy ID for user ID: ${userId}`);
+    // Find pharmacy record with this userId
+    const pharmacy = await db.query.pharmacies.findFirst({
+      where: eq(pharmacies.userId, userId),
+      columns: {
+        id: true
+      }
+    });
+    
+    if (pharmacy?.id) {
+      console.log(`Found pharmacy ID ${pharmacy.id} for user ID ${userId}`);
+      return pharmacy.id;
+    }
+    
+    console.log(`No pharmacy record found for user ID: ${userId}`);
+    return null;
+  } catch (error) {
+    console.error('Error getting pharmacy ID from user ID:', error);
+    return null;
+  }
+}
+
+/**
+ * Gets all orders for a specific patient
+ */
+async function getPatientOrders(patientId: string): Promise<OrderWithItems[]> {
+  console.log("getPatientOrders called with patientId:", patientId);
+  try {
+    // Verify patientId is valid
+    if (!patientId || typeof patientId !== 'string') {
+      console.error('Invalid patientId provided:', patientId);
+      return [];
+    }
+
+    // Create an instance of OrderService to use its method
+    const orderService = new OrderService();
+    const patientOrders = await orderService.getPatientOrders(patientId);
+    
+    // Ensure each order has totalAmount as a number
+    const processedOrders = patientOrders.map(order => ({
+      ...order,
+      totalAmount: ensureNumericAmount(order.totalAmount)
+    }));
+
+    console.log(`Found ${processedOrders.length} orders for patient ${patientId}`);
+    if (processedOrders.length > 0) {
+      console.log("First order details:", JSON.stringify({
+        id: processedOrders[0].id,
+        status: processedOrders[0].status,
+        totalAmount: processedOrders[0].totalAmount,
+        itemCount: processedOrders[0].items?.length || 0
+      }));
+    }
+
+    return processedOrders;
+  } catch (error) {
+    console.error('Error fetching patient orders:', error);
+    // Return empty array instead of throwing an error to prevent API failures
+    return [];
+  }
+}
+
+/**
+ * Create a new order for a patient
+ */
+async function createPatientOrder(
   patientId: string,
   pharmacyId: string,
-  items: { medicationId: string; quantity: number }[],
-  session?: Session | null,
-  prescriptionId?: string
-): Promise<{ success: boolean; orderId?: string; error?: string }> => {
+  items: Array<{medicationId: string, quantity: number, price: number}>
+): Promise<{success: boolean, orderId?: string, error?: string}> {
   try {
-    // Security check if session is provided
-    if (session?.user?.id) {
-      const hasAccess = await hasPatientAccess(session.user.id, patientId);
-      if (!hasAccess) {
-        throw new Error('Unauthorized to create order for this patient');
+    // Validate parameters
+    if (!patientId) throw new Error("Patient ID is required");
+    if (!pharmacyId) throw new Error("Pharmacy ID is required");
+    if (!items || items.length === 0) throw new Error("Order items are required");
+    
+    // Validate each medication ID exists in the medications table
+    for (const item of items) {
+      const medication = await db.query.medications.findFirst({
+        where: eq(medications.id, item.medicationId)
+      });
+      
+      if (!medication) {
+        throw new Error(`Medication with ID ${item.medicationId} not found`);
       }
     }
     
-    // Validate input data
-    if (!patientId) throw new Error('Patient ID is required');
-    if (!pharmacyId) throw new Error('Pharmacy ID is required');
-    if (!items || items.length === 0) throw new Error('Order must contain at least one item');
+    // Calculate total amount
+    const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     
-    // Create order via API
-    const response = await fetch('/api/orders', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        patientId,
-        pharmacyId,
-        items,
-        prescriptionId,
-      }),
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to create order');
+    // Create the order
+    const orderResult = await db.insert(orders).values({
+      patientId: patientId,
+      pharmacyId: pharmacyId,
+      totalAmount: totalAmount,
+      status: 'pending'
+    }).returning();
+    
+    const order = orderResult[0];
+    
+    // Insert order items with correct parameter mapping
+    for (const item of items) {
+      await db.insert(orderItems).values({
+        orderId: order.id,
+        medicationId: item.medicationId,
+        quantity: item.quantity,
+        price: item.price
+      });
     }
-
-    return { success: true, orderId: data.id };
+    
+    return {success: true, orderId: order.id};
   } catch (error) {
-    console.error('Error creating order:', error);
-    return { 
+    console.error("Error creating patient order:", error);
+    return {
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error'
     };
   }
-};
+}
 
 /**
- * Create an order for a patient with proper validation
+ * Gets an order by its ID
  */
-export async function createPatientOrder(
-  patientId: string,
-  pharmacyId: string,
-  medications: { medicationId: string; quantity: number; price: number }[],
-  session?: Session | null,
-  prescriptionId?: string
-): Promise<{ success: boolean; orderId?: string; error?: string }> {
+async function getOrderById(id: string, session: any) {
   try {
-    // Security check if session is provided
-    if (session?.user?.id) {
-      const hasAccess = await hasPatientAccess(session.user.id, patientId);
-      if (!hasAccess) {
-        throw new Error('Unauthorized to create order for this patient');
+    // Validate ID to prevent database errors
+    if (!id || typeof id !== 'string' || id === 'undefined') {
+      throw new Error("Invalid order ID provided");
+    }
+
+    // Create an instance of the OrderService to use its getOrderById method
+    const orderService = new OrderService();
+    const order = await orderService.getOrderById(id);
+
+    if (!order) {
+      return null;
+    }
+
+    // Check if the user has permission to view this order
+    const userId = session.user?.id;
+
+    if (!userId) {
+      throw new Error('User ID not found in session');
+    }
+
+    // Get patient info
+    const patient = await db.query.patients.findFirst({
+      where: eq(patients.userId, userId)
+    });
+
+    // Allow access if user is the patient who placed the order
+    const isPatientOrder = patient?.id === order.patientId;
+    
+    // Check if the user is a pharmacy staff member with access to this order
+    let isPharmacyOrder = false;
+    
+    // First check if this is the user's pharmacy
+    const pharmacy = await db.query.pharmacies.findFirst({
+      where: eq(pharmacies.userId, userId),
+      columns: {
+        id: true
       }
+    });
+    
+    if (pharmacy?.id === order.pharmacyId) {
+      isPharmacyOrder = true;
     }
     
-    // Validate inputs
-    if (!medications || medications.length === 0) {
-      throw new Error('Order must contain at least one medication');
+    // If not a direct pharmacy owner, check if user is staff at this pharmacy
+    if (!isPharmacyOrder && session.user.role === 'PHARMACY_STAFF') {
+      const pharmacyStaff = await db.query.pharmacyStaff.findFirst({
+        where: and(
+          eq(pharmacyStaff.userId, userId),
+          eq(pharmacyStaff.pharmacyId, order.pharmacyId),
+          eq(pharmacyStaff.isActive, true)
+        ),
+        columns: {
+          id: true
+        }
+      });
+      
+      isPharmacyOrder = !!pharmacyStaff;
     }
     
-    // Calculate total amount
-    const totalAmount = medications.reduce(
-      (sum, item) => sum + (item.price * item.quantity), 
-      0
-    );
-    
-    // Create order in database directly
-    const [newOrder] = await db.insert(orders)
-      .values({
-        patientId,
-        pharmacyId,
-        totalAmount: String(totalAmount), // Convert to string for database
-        status: 'pending',
-        prescriptionId,
-      })
-      .returning({ id: orders.id });
-    
-    if (!newOrder?.id) {
-      throw new Error('Failed to create order');
+    // Also allow admin users to access all orders
+    if (session.user.role === 'ADMIN') {
+      isPharmacyOrder = true;
     }
-    
-    // Create order items
-    const orderItemsToInsert = medications.map(med => ({
-      orderId: newOrder.id,
-      medicationId: med.medicationId,
-      quantity: med.quantity,
-      price: String(med.price), // Convert price to string for database
-    }));
-    
-    await db.insert(orderItems)
-      .values(orderItemsToInsert);
-    
-    return { 
-      success: true,
-      orderId: newOrder.id
+
+    if (!isPatientOrder && !isPharmacyOrder) {
+      console.log(`Access denied: User ${userId} with role ${session.user.role} attempted to access order ${id}`);
+      console.log(`Patient check: ${isPatientOrder}, Pharmacy check: ${isPharmacyOrder}`);
+      throw new Error('You do not have permission to access this order');
+    }
+
+    // Ensure totalAmount is a number before returning
+    return {
+      ...order,
+      totalAmount: ensureNumericAmount(order.totalAmount)
     };
   } catch (error) {
-    console.error('Error creating patient order:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    };
+    console.error('Error getting order by ID:', error);
+    throw new Error(error instanceof OrderServiceError ? error.message : 'Failed to retrieve order details');
   }
 }
 
 /**
- * Update order status
+ * Helper function for global use to ensure amount is always a number
  */
-export const updateOrderStatus = async (
-  orderId: string,
-  newStatus: 'pending' | 'processing' | 'delivered' | 'completed' | 'cancelled',
-  session?: Session | null
-): Promise<{ success: boolean; error?: string }> => {
-  try {
-    // Get the order first to check permissions
-    const orderData = await db
-      .select({
-        patientId: orders.patientId,
-      })
-      .from(orders)
-      .where(eq(orders.id, orderId))
-      .then(results => results[0]);
-    
-    if (!orderData) {
-      throw new Error('Order not found');
-    }
-    
-    // Security check if session is provided
-    if (session?.user?.id) {
-      const hasAccess = await hasPatientAccess(session.user.id, orderData.patientId);
-      if (!hasAccess) {
-        throw new Error('Unauthorized to update this order');
-      }
-    }
-    
-    // Call the API to update the order
-    const response = await fetch(`/api/orders/${orderId}/status`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        status: newStatus,
-      }),
-    });
-    
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || `Failed to update order status to ${newStatus}`);
-    }
-    
-    // Clear the cache to ensure fresh data is fetched
-    clearCaches();
-    
-    return { success: true };
-  } catch (error) {
-    console.error(`Error updating order status to ${newStatus}:`, error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
+function ensureNumericAmount(amount: any): number {
+  if (typeof amount === 'number') {
+    return amount;
   }
-};
+  
+  if (typeof amount === 'string') {
+    return parseFloat(amount);
+  }
+  
+  if (amount && typeof amount.toString === 'function') {
+    return parseFloat(amount.toString());
+  }
+  
+  return 0; // Default to zero if conversion isn't possible
+}
 
-/**
- * Clear caches (useful when data updates)
- */
-export function clearCaches() {
-  pharmacyCache.clear();
-  userRoleCache.clear();
+// Export the functions (including the new utility function)
+export {
+  createPatientOrder,
+  getPatientOrders,
+  getPharmacyIdFromUserId,
+  getPatientIdFromUserId,
+  getOrderById,
+  ensureNumericAmount  // Export the helper function for use elsewhere
 }

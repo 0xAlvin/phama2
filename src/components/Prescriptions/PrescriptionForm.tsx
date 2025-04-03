@@ -8,6 +8,7 @@ import { createPrescription, getPharmacies } from '@/services/prescriptionServic
 import { useToast } from '@/components/ui/use-toast';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { Listbox, ListboxItem } from "@/components/ui/listbox"
 
 import './PrescriptionForm.css';
 
@@ -20,20 +21,21 @@ interface Medication {
   name: string;
   dosage: string;
   frequency: string;
-  duration: string;
+  duration?: string;
   quantity?: number;
-  instructions: string;
+  instructions?: string;
 }
 
 interface FormData {
   doctorName: string;
-  doctorContact: string;
-  issueDate: { day: string; month: string; year: string };
-  expiryDate: { day: string; month: string; year: string };
+  doctorContact?: string;
+  issueDate?: Date;
+  expiryDate?: Date;
   medications: Medication[];
-  notes: string;
-  pharmacyId: string;
+  notes?: string;
   sendToPharmacy: boolean;
+  pharmacyId?: string;
+  status: string; // Add status field
 }
 
 export default function PrescriptionForm() {
@@ -51,12 +53,13 @@ export default function PrescriptionForm() {
   const [formData, setFormData] = useState<FormData>({
     doctorName: '',
     doctorContact: '',
-    issueDate: { day: '', month: '', year: '' },
-    expiryDate: { day: '', month: '', year: '' },
+    issueDate: new Date(),
+    expiryDate: null,
     medications: [{ name: '', dosage: '', frequency: '', duration: '', instructions: '' }],
     notes: '',
+    sendToPharmacy: false,
     pharmacyId: '',
-    sendToPharmacy: false
+    status: 'active', // Default status
   });
   
   useEffect(() => {
@@ -224,7 +227,8 @@ export default function PrescriptionForm() {
           instructions: med.instructions || undefined,
         })),
         notes: formData.notes || undefined,
-        pharmacyId: formData.sendToPharmacy ? formData.pharmacyId : undefined
+        pharmaciesId: formData.sendToPharmacy ? formData.pharmacyId : undefined,
+        status: formData.status, // Include status
       };
 
       // Submit the prescription
@@ -506,6 +510,21 @@ export default function PrescriptionForm() {
               </div>
 
               {formData.sendToPharmacy && renderPharmacySelect()}
+            </div>
+
+            <div className="form-row">
+              <label className="form-label">Status</label>
+              <select
+                name="status"
+                className="select-field"
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value as 'active' | 'pending' | 'filled' | 'expired' })}
+              >
+                <option value="active">Active</option>
+                <option value="pending">Pending</option>
+                <option value="filled">Filled</option>
+                <option value="expired">Expired</option>
+              </select>
             </div>
             
             <div className="actions">

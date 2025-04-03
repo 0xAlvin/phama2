@@ -1,0 +1,45 @@
+.popover-portal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.popover-content {
+  position: absolute;
+  z-index: 50;
+  min-width: 12rem;
+  overflow: hidden;
+  background-color: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  box-shadow: 0px 10px 38px -10px rgba(22, 23, 24, 0.35), 0px 10px 20px -15px rgba(22, 23, 24, 0.2);
+  animation: popoverContentShow 0.2s ease-out;
+  pointer-events: auto;
+}
+
+.popover-content.align-center {
+  /* Centered by JavaScript */
+}
+
+.popover-content.align-start {
+  /* Left aligned by JavaScript */
+}
+
+.popover-content.align-end {
+  /* Right aligned by JavaScript */
+}
+
+@keyframes popoverContentShow {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

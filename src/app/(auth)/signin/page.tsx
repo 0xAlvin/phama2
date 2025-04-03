@@ -2,54 +2,38 @@
 
 import { useEffect } from 'react';
 import { signIn, useSession } from 'next-auth/react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import SignInForm from '@/components/auth/SignInForm';
 
 export default function SignInPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
   const { status } = useSession();
+  const router = useRouter();
 
-  // If user is already authenticated, redirect to dashboard
+  // If already authenticated, redirect to dashboard
   useEffect(() => {
     if (status === 'authenticated') {
-      router.push(callbackUrl || '/dashboard');
+      console.log('SignInPage - User is authenticated, redirecting to dashboard');
+      router.push('/dashboard');
     }
-  }, [status, router, callbackUrl]);
-
-  // Error handling in the URL
-  useEffect(() => {
-    const error = searchParams.get('error');
-    if (error) {
-      console.error('Auth error from URL:', error);
-    }
-  }, [searchParams]);
+  }, [status, router]);
 
   const handleSignIn = async (email: string, password: string, remember: boolean) => {
     try {
-      // Use NextAuth's signIn method directly
-      const result = await signIn('credentials', {
-        redirect: false,
+      console.log('SignInPage - Signing in with:', { email, remember });
+      
+      // Use built-in NextAuth redirection
+      await signIn('credentials', {
+        redirect: true,
         email,
         password,
         remember: remember.toString(),
-        callbackUrl
+        callbackUrl: '/dashboard'
       });
       
-      if (result?.error) {
-        return { success: false, error: 'Invalid email or password' };
-      }
-      
-      if (result?.url) {
-        router.push(result.url);
-        return { success: true, url: result.url };
-      }
-      
-      router.push('/dashboard');
+      // This won't execute because of redirect:true
       return { success: true };
     } catch (error) {
-      console.error('Sign-in error:', error);
+      console.error('SignInPage - Error during sign-in:', error);
       return { success: false, error: 'An error occurred during sign-in' };
     }
   };

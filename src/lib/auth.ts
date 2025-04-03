@@ -71,12 +71,47 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: "/signin",
     signOut: "/signout",
   },
-  secret: process.env.AUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
   session: {
     strategy: "jwt",
-    // Default session duration of 24 hours
-    maxAge: 24 * 60 * 60,
+    // Default session duration
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    updateAge: 24 * 60 * 60, // 24 hours
   },
+  
+  // Enable debug mode in development
+  debug: process.env.NODE_ENV === 'development',
+  
+  // Standardize on the next-auth naming convention for cookies
+  cookies: {
+    sessionToken: {
+      name: "next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
+    callbackUrl: {
+      name: "next-auth.callback-url",
+      options: {
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      }
+    },
+    csrfToken: {
+      name: "next-auth.csrf-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      }
+    },
+  },
+  
   callbacks: {
     authorized: async ({auth}) => {
       return !! auth;
@@ -126,6 +161,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       
       return session;
+    },
+    // Add a redirect callback to validate and handle redirects
+    redirect({ url, baseUrl }) {
+      console.log('NextAuth redirect callback:', { url, baseUrl });
+      
+      // Very simple approach:
+      // 1. If it's an absolute URL that doesn't start with baseUrl, redirect to dashboard
+      // 2. Otherwise use the URL as-is
+      
+      if (url.startsWith('http') && !url.startsWith(baseUrl)) {
+        console.log(`External URL detected, redirecting to dashboard`);
+        return `${baseUrl}/dashboard`;
+      }
+      
+      console.log(`Using URL as-is: ${url}`);
+      return url;
     }
   },
 })

@@ -1,6 +1,10 @@
+import { clsx, type ClassValue } from "clsx";
 
-export function cn(...inputs: (string | undefined | null | false)[]) {
-  return inputs.filter(Boolean).join(' ');
+/**
+ * Merges multiple class names together using clsx and returns a string
+ */
+export function cn(...inputs: ClassValue[]): string {
+  return clsx(inputs);
 }
 
 export function formatDate(date: Date | string | undefined): string {

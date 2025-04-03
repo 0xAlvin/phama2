@@ -136,11 +136,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children}) => {
                         )}
                         
                         {/* Common for both roles */}
-                        <NavLink 
-                            href="/dashboard/messages" 
-                            title="Messages"
-                            icon={<MessageSquare size={18} />}
-                        />
+                    
                     </ul>
                     
                     {/* Analytics section - only visible to pharmacies */}

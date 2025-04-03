@@ -4,14 +4,18 @@ import { Loader2, X, CheckCircle, Receipt, CalendarClock, FileText } from 'lucid
 import { toast } from '@/components/ui/use-toast';
 
 interface OrderItem {
-  name: string;
+  id: string;
+  medicationId: string;
+  medicationName?: string;
   quantity: number;
   price: number;
 }
 
 interface OrderDetails {
   id: string;
+  patientId?: string;
   patientName?: string;
+  pharmacyId?: string;
   pharmacyName: string;
   totalAmount: number;
   status: string;
@@ -19,7 +23,7 @@ interface OrderDetails {
   createdAt: string;
   formattedDate?: string;
   updatedAt?: string;
-  medications: OrderItem[];
+  items: OrderItem[];  // Changed from medications to items to match API response
   prescriptionId?: string;
 }
 
@@ -179,28 +183,36 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
               <div className={styles.section}>
                 <h4 className={styles.sectionTitle}>Medications</h4>
                 <div className={styles.medicationsList}>
-                  {orderDetails.medications.map((medication, index) => (
+                  {/* Fixed: Changed from orderDetails.medications to orderDetails.items */}
+                  {orderDetails.items && orderDetails.items.map((item, index) => (
                     <div key={index} className={styles.medicationItem}>
                       <div className={styles.medicationInfo}>
-                        <span className={styles.medicationName}>{medication.name}</span>
-                        <span className={styles.medicationQuantity}>Qty: {medication.quantity}</span>
+                        {/* Changed from medication.name to item.medicationName */}
+                        <span className={styles.medicationName}>{item.medicationName || `Medication ${index + 1}`}</span>
+                        <span className={styles.medicationQuantity}>Qty: {item.quantity}</span>
                       </div>
-                      <div className={styles.medicationPrice}>
-                        KES {medication.price.toFixed(2)}
-                      </div>
+                      <span className={styles.medicationPrice}>
+                        KES {typeof item.price === 'number' ? item.price.toFixed(2) : parseFloat(item.price.toString()).toFixed(2)}
+                      </span>
                     </div>
                   ))}
                 </div>
-              </div>
-              
-              <div className={styles.orderSummary}>
-                <div className={styles.summaryItem}>
-                  <span>Subtotal</span>
-                  <span>KES {orderDetails.totalAmount.toFixed(2)}</span>
-                </div>
-                <div className={styles.summaryTotal}>
-                  <span>Total</span>
-                  <span>KES {orderDetails.totalAmount.toFixed(2)}</span>
+                
+                <div className={styles.orderSummary}>
+                  <div className={styles.summaryItem}>
+                    <span>Items Total</span>
+                    <span>
+                      KES {Array.isArray(orderDetails.items) ? 
+                        orderDetails.items.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2) : 
+                        '0.00'}
+                    </span>
+                  </div>
+                  <div className={styles.summaryTotal}>
+                    <span>Order Total</span>
+                    <span>KES {typeof orderDetails.totalAmount === 'number' ? 
+                      orderDetails.totalAmount.toFixed(2) : 
+                      parseFloat(orderDetails.totalAmount.toString()).toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
             </>
@@ -212,7 +224,9 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
         </div>
         
         <div className={styles.modalFooter}>
-          <button className={styles.closeBtn} onClick={onClose}>Close</button>
+          <button className={styles.closeBtn} onClick={onClose}>
+            Close
+          </button>
         </div>
       </div>
     </div>

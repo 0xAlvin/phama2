@@ -1,3 +1,8 @@
+import imageService from './imageService';
+import { db } from '@/lib/db';
+import { prescriptions, pharmacies } from '@/lib/schema';
+import { eq } from 'drizzle-orm';
+
 /**
  * Service for handling prescription-related API calls
  */
@@ -40,91 +45,157 @@ export interface ApiResponse<T> {
 }
 
 /**
- * Fetches prescriptions for a specific patient
+ * Results for downloading a prescription
  */
-export async function getPatientPrescriptions(patientId: string): Promise<ApiResponse<Prescription[]>> {
-  try {
-    const response = await fetch(`/api/patient/prescriptions?patientId=${patientId}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      cache: 'no-store',
-    });
+export interface PrescriptionResult {
+  success: boolean;
+  error?: string;
+  url?: string;
+}
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      const errorMessage = errorData.error || 'Failed to fetch prescriptions';
+/**
+ * Service for handling prescription-related operations
+ */
+export const prescriptionService = {
+  /**
+   * Create a new prescription
+   */
+  async createPrescription(data: any, image?: File | null): Promise<{ success: boolean; id?: string; error?: string }> {
+    try {
+      let imageUrl: string | undefined = undefined;
       
-      // Handle specific error status codes
-      if (response.status === 401) {
-        return {
-          success: false, 
-          error: {
-            message: 'You are not authorized to view these prescriptions. Please log in again.',
-            type: 'UNAUTHORIZED'
-          }
-        };
-      } else if (response.status === 404) {
-        return {
-          success: false,
-          error: {
-            message: 'Prescriptions not found',
-            type: 'NOT_FOUND'
-          }
-        };
-      } else if (response.status >= 500) {
-        return {
-          success: false,
-          error: {
-            message: 'Server error occurred. Please try again later.',
-            type: 'SERVER_ERROR'
-          }
-        };
+      // Upload image if provided
+      if (image) {
+        const uploadResult = await imageService.uploadImage(
+          image, 
+          `prescriptions/${data.patientId}`
+        );
+        imageUrl = uploadResult.publicUrl;
       }
       
-      if (process.env.NODE_ENV !== 'production') {
-        console.log(`API Error: ${errorMessage}`);
+      // Complete prescription data with image URL if available
+      const completeData = {
+        ...data,
+        imageUrl: imageUrl || null
+      };
+      
+      // Make API call to create prescription
+      const response = await fetch('/api/prescriptions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(completeData)
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create prescription');
       }
       
-      throw {
-        message: errorMessage,
-        type: 'UNKNOWN'
+      return { success: true, id: result.id };
+    } catch (error) {
+      console.error('Error creating prescription:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
       };
     }
-
-    const data = await response.json();
-    return {
-      success: true,
-      data
-    };
-  } catch (error) {
-    console.log('Error in getPatientPrescriptions service:', 
-      typeof error === 'string' ? error : error instanceof Error ? error.message : 'Unknown error');
-    
-    return {
-      success: false,
-      error: {
-        message: typeof error === 'string' ? error : 
-                 (error as any)?.message || 'Unknown error occurred while fetching prescriptions',
-        type: (error as any)?.type || 'UNKNOWN'
+  },
+  
+  /**
+   * Fetch prescriptions for a patient
+   */
+  async getPatientPrescriptions(patientId: string): Promise<any[]> {
+    try {
+      const response = await fetch(`/api/patient/prescriptions?patientId=${patientId}`, {
+        method: 'GET'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch prescriptions');
       }
+      
+      const data = await response.json();
+      return data.prescriptions || [];
+    } catch (error) {
+      console.error('Error fetching prescriptions:', error);
+      return [];
+    }
+  },
+  
+  /**
+   * Fetch list of pharmacies
+   */
+  async getPharmacies(): Promise<any[]> {
+    try {
+      // Use direct DB access server-side, or API call client-side
+      if (typeof window === 'undefined') {
+        // Server-side logic
+        return await db.select({
+          id: pharmacies.id,
+          name: pharmacies.name,
+          phone: pharmacies.phone,
+          email: pharmacies.email
+        }).from(pharmacies);
+      } else {
+        // Client-side logic
+        const response = await fetch('/api/pharmacies', {
+          method: 'GET'
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch pharmacies');
+        }
+        
+        const data = await response.json();
+        return data.pharmacies || [];
+      }
+    } catch (error) {
+      console.error('Error fetching pharmacies:', error);
+      return [];
+    }
+  }
+};
+
+/**
+ * Download prescription document
+ */
+export const downloadPrescription = async (id: string): Promise<PrescriptionResult> => {
+  try {
+    const response = await fetch(`/api/prescriptions/${id}/download`);
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to download prescription');
+    }
+    
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    
+    return { success: true, url };
+  } catch (error) {
+    console.error('Error downloading prescription:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
     };
   }
-}
+};
 
 /**
  * Fetches a specific prescription by ID
  */
-export const getPrescriptionById = async (prescriptionId: string): Promise<Prescription | null> => {
+export const getPrescriptionById = async (id: string): Promise<Prescription | null> => {
   try {
-    const response = await fetch(`/api/prescriptions/${prescriptionId}`);
+    const response = await fetch(`/api/prescriptions/${id}`);
+    
     if (!response.ok) {
       throw new Error('Failed to fetch prescription');
     }
+    
     return await response.json();
   } catch (error) {
-    console.error(`Error fetching prescription ${prescriptionId}:`, error);
+    console.error(`Error fetching prescription ${id}:`, error);
     return null;
   }
 };
@@ -185,14 +256,14 @@ export const createPrescription = async (
     }[];
     notes?: string;
     pharmacyId?: string;
-    imageUrl?: string; // Added imageUrl to the formData
+    imageUrl?: string;
   },
   prescriptionImage?: File | null
 ): Promise<{ success: boolean; id?: string; error?: string }> => {
   try {
     let imageUrl = formData.imageUrl;
 
-    // Upload image if provided and not already uploaded
+    // Upload image if provided
     if (prescriptionImage && !imageUrl) {
       const uploadResult = await uploadPrescriptionImage(prescriptionImage);
       if (uploadResult.success && uploadResult.fileUrl) {
@@ -277,34 +348,61 @@ export const getPharmacies = async () => {
       throw new Error('Failed to fetch pharmacies');
     }
 
-    return await response.json();
+    const data = await response.json();
+    return data.pharmacies || [];
   } catch (error) {
     console.error('Error fetching pharmacies:', error);
     return [];
   }
 };
 
-/**
- * Download prescription document
- */
-export const downloadPrescription = async (prescriptionId: string): Promise<{ success: boolean, url?: string, error?: string }> => {
+import { Prescription as DBPrescription } from '@/types/prescription';
+
+// Get all prescriptions for a specific user
+export async function getPrescriptionsForUser(userId: string): Promise<DBPrescription[]> {
   try {
-    const response = await fetch(`/api/prescriptions/${prescriptionId}/download`);
+    // This is now server-side only code
+    const prescriptions = await db.query(
+      'SELECT * FROM prescriptions WHERE userId = $1 ORDER BY createdAt DESC',
+      [userId]
+    );
     
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to download prescription');
-    }
-    
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    
-    return { success: true, url };
+    return prescriptions;
   } catch (error) {
-    console.error('Error downloading prescription:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
-    };
+    console.error('Database error:', error);
+    throw new Error('Failed to fetch prescriptions');
   }
-};
+}
+
+// Create a new prescription (renamed to avoid duplication)
+export async function createPrescriptionInDb(
+  prescriptionData: Omit<DBPrescription, 'id' | 'createdAt' | 'updatedAt'>
+): Promise<DBPrescription> {
+  try {
+    // This is now server-side only code
+    const [newPrescription] = await db.query(
+      `INSERT INTO prescriptions (
+        userId, medicationName, dosage, instructions, doctorName,
+        pharmacyName, pharmacyId, prescribedDate, status, refills
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      RETURNING *`,
+      [
+        prescriptionData.userId,
+        prescriptionData.medicationName,
+        prescriptionData.dosage,
+        prescriptionData.instructions,
+        prescriptionData.doctorName,
+        prescriptionData.pharmacyName,
+        prescriptionData.pharmacyId || null,
+        prescriptionData.prescribedDate,
+        prescriptionData.status,
+        prescriptionData.refills || 0
+      ]
+    );
+    
+    return newPrescription;
+  } catch (error) {
+    console.error('Database error:', error);
+    throw new Error('Failed to create prescription');
+  }
+}

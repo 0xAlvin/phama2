@@ -8,15 +8,19 @@ import PaymentOptions from '@/components/checkout/PaymentOptions';
 import { processStripePayment, processMpesaPayment } from '@/services/paymentService';
 import styles from './checkout.module.css';
 import DashboardLayout from '@/components/Dashboard/DashboardLayout';
+import { useSession } from 'next-auth/react';
+import axios from 'axios';
 
 export default function CheckoutPage() {
     const { cart, clearCart } = useCart();
+    const { data: session } = useSession();
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'stripe' | 'mpesa' | null>(null);
     const [phoneNumber, setPhoneNumber] = useState('');
-    const [paymentStatus, setPaymentStatus] = useState<'pending' | 'processing' | 'completed' | 'failed'>('pending');
+    const [paymentStatus, setPaymentStatus] = useState<'pending' | 'processing' | 'completed' | 'failed' | 'initiated'>('pending');
+    const [message, setMessage] = useState('');
 
     // Calculate order total
     const calculateTotal = () => {
@@ -29,59 +33,161 @@ export default function CheckoutPage() {
     };
 
     const handlePhoneNumberChange = (value: string) => {
-        setPhoneNumber(value);
+        // Only allow digits, +, and spaces
+        const sanitized = value.replace(/[^\d\s+]/g, '');
+        setPhoneNumber(sanitized);
     };
 
-    const handlePaymentSubmit = async () => {
-        if (!selectedPaymentMethod) {
-            setError('Please select a payment method');
-            return;
-        }
-
-        // Validate phone number for MPesa
-        if (selectedPaymentMethod === 'mpesa') {
-            if (!phoneNumber) {
-                setError('Phone number is required for M-Pesa payment');
-                return;
-            }
-
-            // Simple validation - you might want to enhance this
-            if (!phoneNumber.match(/^\+?\d{10,15}$/)) {
-                setError('Please enter a valid phone number');
-                return;
-            }
-        }
-
-        setLoading(true);
-        setPaymentStatus('processing');
-        setError(null);
-
+    const handlePaymentSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        
         try {
-            // Prepare order data
+            setError('');
+            setMessage('');
+            
+            // Validate phone number if M-PESA is selected
+            if (selectedPaymentMethod === 'mpesa') {
+                if (!phoneNumber || phoneNumber.trim() === '') {
+                    setError('Phone number is required for M-PESA payments');
+                    return;
+                }
+            }
+            
             const orderData = {
                 items: cart.map(item => ({
                     medicationId: item.product.id,
                     quantity: item.quantity,
-                    price: item.product.price
+                    price: item.product.price,
                 })),
                 totalAmount: calculateTotal(),
-                phoneNumber: selectedPaymentMethod === 'mpesa' ? phoneNumber : undefined
+                phoneNumber: selectedPaymentMethod === 'mpesa' ? phoneNumber : undefined,
+                payment_method: selectedPaymentMethod,
             };
+            
+            const response = await fetch('/api/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(orderData)
+            });
+            
+            const result = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(result.message || 'Failed to create order');
+            }
+            
+            // Order created successfully
+            if (selectedPaymentMethod === 'mpesa') {
+                setPaymentStatus('initiated');
+                setMessage('M-Pesa STK push has been sent to your phone. Please check your phone and enter your PIN to complete the transaction.');
 
+                // Optional: Start a check for payment status
+                // startPollingForPaymentStatus(result.transactionId);
+                
+                // Show payment instructions
+                // NOTE: You might want to redirect to a payment status page here
+            } else if (selectedPaymentMethod === 'cash') {
+                // Redirect to success page for cash orders
+                router.push(`/orders/${result.orderId}/success`);
+            }
+        } catch (err) {
+            console.error('Payment submission error:', err);
+            setPaymentStatus('error');
+            setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+        }
+    };
+
+    const handleMpesaPayment = async () => {
+        try {
+            setLoading(true);
+
+            // Make sure we have all required data
+            if (!cart || cart.length === 0) {
+                setError('Missing required checkout information');
+                setLoading(false);
+                return;
+            }
+
+            // Format order items for the API
+            const items = cart.map(item => ({
+                medicationId: item.product.id,
+                quantity: item.quantity,
+                price: item.product.price
+            }));
+
+            // Send complete data to the API
+            const response = await axios.post('/api/payments/mpesa', {
+                amount: calculateTotal(),
+                totalAmount: calculateTotal(),
+                items: items,
+                phoneNumber: phoneNumber,
+                // We'll provide a pharmacy ID if available
+                pharmacyId: router.query?.pharmacyId || localStorage.getItem('selectedPharmacyId') || undefined,
+            });
+
+            if (response.data.success) {
+                // Handle successful payment
+                router.push(`/orders/${response.data.data.orderId}?success=true`);
+            } else {
+                setError(response.data.message || 'Payment failed');
+            }
+        } catch (error) {
+            console.error('Payment error:', error);
+            setError('Payment processing failed. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleCheckout = async () => {
+        // Validate phone number only if MPesa is selected
+        if (selectedPaymentMethod === 'mpesa') {
+            if (!phoneNumber) {
+                setError('Please enter your phone number');
+                return;
+            }
+            // Validate phone number format
+            const kenyanPhoneRegex = /^(?:\+?254|0)?[71]\d{8}$/;
+            if (!kenyanPhoneRegex.test(phoneNumber.replace(/\s/g, ''))) {
+                setError('Please enter a valid Kenyan phone number');
+                return;
+            }
+        }
+        setLoading(true);
+        setPaymentStatus('processing');
+        setError(null);
+        try {
+            // Format phone number consistently for M-Pesa
+            let formattedPhone = phoneNumber;
+            if (phoneNumber && phoneNumber.startsWith('0')) {
+                formattedPhone = '254' + phoneNumber.substring(1);
+            } else if (phoneNumber && !phoneNumber.startsWith('254')) {
+                formattedPhone = '254' + phoneNumber;
+            }
+            
+            const orderData = {
+                items: cart.map(item => ({
+                    medicationId: item.product.id,
+                    quantity: item.quantity,
+                    price: item.product.price,
+                })),
+                totalAmount: calculateTotal(),
+                phoneNumber: selectedPaymentMethod === 'mpesa' ? formattedPhone : undefined,
+                // We need to provide a pharmacy ID - for now, we'll pass a placeholder or query parameter
+                pharmacyId: router.query?.pharmacyId || localStorage.getItem('selectedPharmacyId') || undefined,
+            };
+            console.log('Sending payment request with data:', JSON.stringify(orderData));
             let result;
             if (selectedPaymentMethod === 'stripe') {
                 result = await processStripePayment(orderData);
             } else {
                 result = await processMpesaPayment(orderData);
             }
-
-            if (result.success) {
+            console.log('Payment result:', result);
+            if (result.success && result.orderId) {
                 setPaymentStatus('completed');
                 clearCart();
-                // Redirect to success page after short delay
-                setTimeout(() => {
-                    router.push(`/order/confirmation?orderId=${result.orderId}`);
-                }, 1500);
+                router.push(`/order/confirmation?orderId=${result.orderId}`);
             } else {
                 setPaymentStatus('failed');
                 setError(result.message || 'Payment failed. Please try again.');
@@ -125,7 +231,20 @@ export default function CheckoutPage() {
                             onPhoneNumberChange={handlePhoneNumberChange}
                         />
 
-                        {error && <div className={styles.error}>{error}</div>}
+                        {error && (
+                            <div className="bg-red-50 p-4 rounded-md mb-4">
+                                <p className="text-red-700">{error}</p>
+                            </div>
+                        )}
+
+                        {paymentStatus === 'initiated' && (
+                            <div className="bg-green-50 p-4 rounded-md mb-4">
+                                <p className="text-green-700">{message}</p>
+                                <p className="text-sm text-green-600">
+                                    Please complete the payment on your phone. This page will update once payment is complete.
+                                </p>
+                            </div>
+                        )}
 
                         <button
                             className={styles.payButton}
