@@ -37,12 +37,13 @@ export default function PrescriptionsPage() {
     }
   }, [session?.user?.id]);
 
-  // Separate API fetch function to replace the store
+  // Make sure fetchPrescriptionsData correctly handles API responses
   const fetchPrescriptionsData = async (userId: string) => {
     try {
       setLoading(true);
       setError(null);
 
+      console.log(`Fetching prescriptions for user: ${userId}`);
       const response = await fetch(`/api/prescriptions?userId=${userId}`, {
         method: 'GET',
         headers: {
@@ -50,21 +51,26 @@ export default function PrescriptionsPage() {
         },
       });
 
-      // Handle 404 (No prescriptions found) gracefully without treating it as an error
-      if (response.status === 404) {
-        setPrescriptions([]);
-        setLoading(false);
-        return;
-      }
+      // Log response status for debugging
+      console.log(`API Response status: ${response.status}`);
 
-      // For other non-OK responses, handle as errors
+      // For non-OK responses, handle as errors
       if (!response.ok) {
         const errorMessage = `Failed to fetch prescriptions (${response.status})`;
+        console.error(errorMessage);
         throw new Error(errorMessage);
       }
 
       const data = await response.json();
-      setPrescriptions(data.prescriptions || []);
+      console.log("Prescriptions data received:", data);
+      
+      // Check if data.prescriptions exists and is an array
+      if (Array.isArray(data.prescriptions)) {
+        setPrescriptions(data.prescriptions);
+      } else {
+        console.warn("Unexpected response format - prescriptions array missing");
+        setPrescriptions([]);
+      }
     } catch (error) {
       console.error('Error fetching prescriptions:', error);
       setError(error instanceof Error ? error.message : 'An unknown error occurred');

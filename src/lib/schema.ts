@@ -131,7 +131,7 @@ export const prescriptions = pgTable("prescriptions", {
     doctorId: uuid("doctor_id").references(() => doctors.id),
     doctorName: varchar("doctor_name", { length: 255 }).notNull(),
     doctorContact: varchar("doctor_contact", { length: 100 }),
-    issueDate: date("issue_date").notNull(),
+    issueDate: date("issue_date"),
     expiryDate: date("expiry_date"),
     status: varchar("status", { length: 50 }).notNull().default("active"),
     notes: text("notes"),

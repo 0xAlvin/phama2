@@ -1,115 +1,181 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { prescriptions, prescriptionItems, medications } from '@/lib/schema';
+import { prescriptions, prescriptionItems, medications, patients } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
-
-// Remove the formatTimestampForPostgres function as Drizzle expects Date objects, not strings
 
 export async function POST(request: NextRequest) {
     const requestStartTime = Date.now();
     console.log(`POST /api/prescriptions/create invoked at ${new Date(requestStartTime).toISOString()}`);
 
     try {
-        // 1. Authentication & Authorization (Keep existing logic)
+        // 1. Authentication & Authorization
         const session = await auth();
-        if (!session?.user?.id) { /* ... return 401 ... */ }
+        if (!session?.user?.id) {
+            return NextResponse.json({ 
+                error: 'Authentication required',
+                success: false
+            }, { status: 401 });
+        }
+        
         const userId = session.user.id;
         const userRole = session.user.role as string | undefined;
 
-        // 2. Parse Request Body (Keep existing logic)
+        // 2. Parse Request Body
         let data: any;
-        try { data = await request.json(); /* ... */ }
-        catch (parseError: any) { /* ... return 400 ... */ }
+        try { 
+            data = await request.json();
+        } catch (parseError: any) { 
+            return NextResponse.json({ 
+                error: 'Invalid JSON in request body',
+                details: parseError.message,
+                success: false
+            }, { status: 400 });
+        }
+        
         console.log("API received data:", JSON.stringify(data, null, 2));
 
-        // 3. Payload Validation (Keep existing logic)
-        // ... requiredFields check ...
-        // ... medications array check ...
-        // ... individual medication item check ...
-
-        // 4. Authorization Check (Keep existing logic)
-        if (data.patientId !== userId && userRole !== 'ADMIN' && userRole !== 'DOCTOR') {
-             /* ... return 403 ... */
+        // 3. Payload Validation - removed issueDate from validation
+        if (!data.patientId || !data.doctorName || !data.medications) {
+            return NextResponse.json({ 
+                error: 'Missing required fields',
+                details: 'patientId, doctorName, and medications are required',
+                success: false
+            }, { status: 400 });
+        }
+        
+        if (!Array.isArray(data.medications) || data.medications.length === 0) {
+            return NextResponse.json({ 
+                error: 'Invalid medications data',
+                details: 'Medications must be a non-empty array',
+                success: false
+            }, { status: 400 });
         }
 
-        // 5. Date Parsing and Validation - Fix date handling
-        let parsedIssueDate: Date;
-        let parsedExpiryDate: Date | null = null;
-        const now = new Date(); // Current timestamp
-
-        try {
-            const issueDateInput = data.issueDate;
-            if (!issueDateInput) { throw new Error('issueDate is missing.'); }
-            let date = new Date(issueDateInput);
-            if (isNaN(date.getTime())) { throw new Error(`Invalid issueDate format: ${issueDateInput}`); }
-            parsedIssueDate = date;
-
-            const expiryDateInput = data.expiryDate;
-            if (expiryDateInput) {
-                date = new Date(expiryDateInput);
-                if (!isNaN(date.getTime())) {
-                    parsedExpiryDate = date;
-                } else { console.warn(`Invalid expiryDate format: ${expiryDateInput}. Treating as null.`); }
-            }
-        } catch (dateParseError: any) {
-            console.error('Date Parsing Error:', dateParseError);
+        // 4. Authorization Check
+        if (data.patientId !== userId && userRole !== 'ADMIN' && userRole !== 'DOCTOR') {
             return NextResponse.json({ 
-                error: 'Invalid date format', 
-                details: dateParseError.message 
-            }, { status: 400 });
+                error: 'Unauthorized to create prescriptions for other users',
+                success: false
+            }, { status: 403 });
+        }
+
+        // 5. Verify patient exists in database
+        const patientExists = await db.query.patients.findFirst({
+            where: eq(patients.id, data.patientId),
+            columns: { id: true }
+        });
+
+        if (!patientExists) {
+            console.error(`Patient ID ${data.patientId} not found in the database`);
+            
+            // Check if this is the user's own ID (they might be trying to create a prescription for themselves)
+            if (data.patientId === userId) {
+                // Try to find patient record by userId instead
+                const userPatient = await db.query.patients.findFirst({
+                    where: eq(patients.userId, userId),
+                    columns: { id: true }
+                });
+                
+                if (userPatient) {
+                    // Update patientId to the correct one from the database
+                    console.log(`Correcting patient ID from ${data.patientId} to ${userPatient.id}`);
+                    data.patientId = userPatient.id;
+                } else {
+                    // Need to create a patient record for this user
+                    console.log(`No patient record found for user ${userId}. Creating one...`);
+                    
+                    try {
+                        // Create basic patient record
+                        const [newPatient] = await db.insert(patients).values({
+                            userId: userId,
+                            firstName: session.user.name?.split(' ')[0] || 'New',
+                            lastName: session.user.name?.split(' ')[1] || 'Patient',
+                            dateOfBirth: new Date('2000-01-01'), // Default date
+                            phone: '0000000000', // Default phone
+                            createdAt: new Date(),
+                            updatedAt: new Date()
+                        }).returning({ id: patients.id });
+                        
+                        if (!newPatient?.id) {
+                            throw new Error('Failed to create patient record');
+                        }
+                        
+                        // Update patientId with the newly created patient ID
+                        data.patientId = newPatient.id;
+                        console.log(`Created new patient record with ID: ${data.patientId}`);
+                    } catch (createError) {
+                        console.error('Failed to create patient record:', createError);
+                        return NextResponse.json({ 
+                            error: 'Patient record not found and could not be created',
+                            details: 'Please complete your patient profile before creating prescriptions',
+                            success: false
+                        }, { status: 400 });
+                    }
+                }
+            } else {
+                // They're trying to create a prescription for someone else who doesn't exist
+                return NextResponse.json({ 
+                    error: 'Invalid patient ID',
+                    details: 'The specified patient does not exist in the system',
+                    success: false
+                }, { status: 400 });
+            }
         }
 
         // 6. Prepare Data for Insertion
         const prescriptionId = randomUUID();
-        const processedMedications = data.medications.map((med: any) => { /* ... keep existing mapping logic ... */ });
-
-        // Verify pharmacyId column name (adjust 'pharmacyId' if needed)
+        const now = new Date();
+        const processedMedications = data.medications;
         const pharmacyIdValue = data.pharmacyId || data.pharmaciesId || null;
 
-        // 7. Database Transaction - Pass Date objects directly to Drizzle
+        // 7. Database Transaction
         console.log(`Starting database transaction for prescription ${prescriptionId}...`);
         try {
             await db.transaction(async (tx) => {
-                // Insert prescription with proper Date objects
+                // Insert prescription - removed issueDate and expiryDate fields
                 await tx.insert(prescriptions).values({
                     id: prescriptionId,
                     patientId: data.patientId,
                     doctorName: data.doctorName,
                     doctorContact: data.doctorContact || null,
-                    issueDate: parsedIssueDate,     // Pass Date object directly
-                    expiryDate: parsedExpiryDate,   // Pass Date object or null
-                    status: data.status,
+                    status: data.status || 'pending',
                     notes: data.notes || null,
                     pharmacyId: pharmacyIdValue,
                     imageUrl: data.imageUrl || null,
-                    createdAt: now,           // Pass Date object directly
-                    updatedAt: now            // Pass Date object directly
+                    createdAt: now,
+                    updatedAt: now
                 });
                 console.log(`Inserted prescription record ${prescriptionId}.`);
 
                 // Insert items with proper Date objects
                 for (const med of processedMedications) {
+                    if (!med.name || !med.dosage || !med.frequency) {
+                        throw new Error('Each medication must include name, dosage, and frequency');
+                    }
+                    
                     let medicationId: string | undefined;
-                    // --- Find or Create Medication Logic (Keep existing) ---
+                    // --- Find or Create Medication Logic
                     const existingMed = await tx.select({ id: medications.id }).from(medications).where(eq(medications.name, med.name));
                     if (existingMed.length > 0) { 
                         medicationId = existingMed[0].id; 
                     } else {
                         const newMed = await tx.insert(medications).values({
-                            name: med.name, /* other fields */
-                            createdAt: now, // Use Date object directly
-                            updatedAt: now  // Use Date object directly
+                            name: med.name,
+                            description: med.description || null,
+                            type: med.type || 'tablet',
+                            createdAt: now,
+                            updatedAt: now
                         }).returning({ id: medications.id });
+                        
                         if (!newMed?.[0]?.id) { 
                             throw new Error(`Failed to create/get ID for med ${med.name}`); 
                         }
                         medicationId = newMed[0].id;
                     }
-                    // --- End Find or Create ---
 
-                    if (!medicationId) { // Defensive check
+                    if (!medicationId) {
                         throw new Error(`Failed to determine medicationId for ${med.name}`);
                     }
 
@@ -118,38 +184,36 @@ export async function POST(request: NextRequest) {
                         medicationId: medicationId,
                         dosage: med.dosage,
                         frequency: med.frequency,
-                        duration: med.duration,
-                        quantity: med.quantity,
-                        instructions: med.instructions,
-                        createdAt: now, // Use Date object directly
-                        updatedAt: now  // Use Date object directly
+                        duration: med.duration || null,
+                        quantity: med.quantity || null,
+                        instructions: med.instructions || null,
+                        createdAt: now,
+                        updatedAt: now
                     });
                     console.log(`Inserted prescription item for med ID ${medicationId}`);
-                } // End loop
-            }); // End transaction
+                }
+            });
 
-            // 8. Return Success Response (Keep existing logic)
-             const duration = Date.now() - requestStartTime;
-             console.log(`Successfully completed transaction for prescription ${prescriptionId} in ${duration}ms.`);
-             return NextResponse.json({ 
+            // 8. Return Success Response
+            const duration = Date.now() - requestStartTime;
+            console.log(`Successfully completed transaction for prescription ${prescriptionId} in ${duration}ms.`);
+            return NextResponse.json({ 
                 success: true, 
                 prescriptionId: prescriptionId,
                 message: 'Prescription created successfully' 
-             }, { status: 201 });
+            }, { status: 201 });
 
         } catch (dbError: any) {
-             // 9. Handle DB Error (Keep existing logic)
-             const duration = Date.now() - requestStartTime;
-             console.error(`Database transaction error after ${duration}ms:`, dbError);
-             console.error('Database error stack:', dbError?.stack);
-             return NextResponse.json({ 
+            const duration = Date.now() - requestStartTime;
+            console.error(`Database transaction error after ${duration}ms:`, dbError);
+            console.error('Database error stack:', dbError?.stack);
+            return NextResponse.json({ 
                 error: 'Database error while creating prescription',
                 details: dbError.message
-             }, { status: 500 });
+            }, { status: 500 });
         }
 
     } catch (error: any) {
-        // 10. Handle Outer Error (Keep existing logic)
         const duration = Date.now() - requestStartTime;
         console.error(`Unhandled error after ${duration}ms:`, error);
         console.error('Unhandled error stack:', error?.stack);

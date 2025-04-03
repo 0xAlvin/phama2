@@ -1,0 +1,1 @@
+ALTER TABLE "prescriptions" ALTER COLUMN "issue_date" DROP NOT NULL;
